@@ -11,6 +11,11 @@ const BACKEND_URL =
 // HTTP API
 // =====================================================
 
+// Main HTTP backend URL
+export const BACKEND_HTTP =
+    BACKEND_URL;
+
+// Alias, in case other files use this name
 export const BACKEND_API =
     BACKEND_URL;
 
