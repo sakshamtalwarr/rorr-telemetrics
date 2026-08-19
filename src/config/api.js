@@ -1,9 +1,26 @@
-const hostname = window.location.hostname;
+// =====================================================
+// BACKEND CONFIGURATION
+// =====================================================
 
-export const BACKEND_HTTP =
-  import.meta.env.VITE_BACKEND_URL ||
-  `http://${hostname}:5000`;
+const BACKEND_URL =
+    import.meta.env.VITE_API_URL ||
+    "http://localhost:5000";
+
+
+// =====================================================
+// HTTP API
+// =====================================================
+
+export const BACKEND_API =
+    BACKEND_URL;
+
+
+// =====================================================
+// WEBSOCKET
+// =====================================================
 
 export const BACKEND_WS =
-  import.meta.env.VITE_BACKEND_WS ||
-  `ws://${hostname}:5000`;
+    import.meta.env.VITE_WS_URL ||
+    BACKEND_URL
+        .replace(/^https:/, "wss:")
+        .replace(/^http:/, "ws:");
