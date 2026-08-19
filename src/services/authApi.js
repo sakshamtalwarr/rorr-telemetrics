@@ -6,7 +6,7 @@ import axios from "axios";
 // =====================================================
 
 const API_URL =
-    "https://rorr-telemetrics-backend.onrender.com/api/auth";
+    `${import.meta.env.VITE_API_URL}/api/auth`;
 
 
 // =====================================================
