@@ -1,0 +1,239 @@
+@import 'leaflet/dist/leaflet.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* =====================================================
+   CUSTOM SCROLLBAR
+   ===================================================== */
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+/* =====================================================
+   RORR TELEMETRICS — VISIBLE ANIMATED BACKGROUND
+   ===================================================== */
+
+@keyframes rorrAmbientMove {
+
+    0% {
+        transform: translate3d(-10%, -5%, 0) scale(1);
+    }
+
+    50% {
+        transform: translate3d(10%, 8%, 0) scale(1.15);
+    }
+
+    100% {
+        transform: translate3d(-10%, -5%, 0) scale(1);
+    }
+
+}
+
+
+@keyframes rorrAmbientMove2 {
+
+    0% {
+        transform: translate3d(10%, 10%, 0) scale(1);
+    }
+
+    50% {
+        transform: translate3d(-10%, -5%, 0) scale(1.12);
+    }
+
+    100% {
+        transform: translate3d(10%, 10%, 0) scale(1);
+    }
+
+}
+
+
+.rorr-app-background {
+
+    position: relative;
+
+    min-height: 100vh;
+
+    overflow: hidden;
+
+    background:
+        #050505;
+
+}
+
+
+/* =====================================================
+   LARGE AMBIENT GLOW
+   ===================================================== */
+
+.rorr-app-background::before {
+
+    content: "";
+
+    position: absolute;
+
+    width: 700px;
+    height: 700px;
+
+    top: -300px;
+    left: -250px;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(79, 70, 229, 0.32) 0%,
+            rgba(79, 70, 229, 0.18) 25%,
+            rgba(79, 70, 229, 0.06) 50%,
+            transparent 72%
+        );
+
+    filter: blur(35px);
+
+    pointer-events: none;
+
+    animation:
+        rorrAmbientMove 14s ease-in-out infinite;
+
+}
+
+
+/* =====================================================
+   SECOND GLOW
+   ===================================================== */
+
+.rorr-app-background::after {
+
+    content: "";
+
+    position: absolute;
+
+    width: 650px;
+    height: 650px;
+
+    right: -250px;
+    bottom: -250px;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(14, 165, 233, 0.26) 0%,
+            rgba(14, 165, 233, 0.14) 28%,
+            rgba(14, 165, 233, 0.05) 52%,
+            transparent 72%
+        );
+
+    filter: blur(35px);
+
+    pointer-events: none;
+
+    animation:
+        rorrAmbientMove2 17s ease-in-out infinite;
+
+}
+
+
+/* =====================================================
+   CONTENT ABOVE THE GLOW
+   ===================================================== */
+
+.rorr-app-content {
+
+    position: relative;
+
+    z-index: 2;
+
+    min-height: 100vh;
+
+}
+
+/* =====================================================
+   LEAFLET / TAILWIND COMPATIBILITY
+   ===================================================== */
+
+.leaflet-container {
+
+    width: 100% !important;
+
+    height: 100% !important;
+
+    background: #111 !important;
+
+}
+
+
+/* Prevent Tailwind Preflight from
+   resizing Leaflet tiles */
+
+.leaflet-container .leaflet-tile {
+
+    max-width: none !important;
+
+    max-height: none !important;
+
+    width: 256px !important;
+
+    height: 256px !important;
+
+}
+
+
+/* Make sure tile images are actually visible */
+
+.leaflet-container img.leaflet-tile {
+
+    display: block !important;
+
+    visibility: visible !important;
+
+    opacity: 1 !important;
+
+}
+
+
+/* =====================================================
+   LEAFLET LAYER STACKING
+   ===================================================== */
+
+.leaflet-container .leaflet-tile-pane {
+
+    z-index: 200 !important;
+
+}
+
+.leaflet-container .leaflet-overlay-pane {
+
+    z-index: 400 !important;
+
+}
+
+.leaflet-container .leaflet-marker-pane {
+
+    z-index: 600 !important;
+
+}
+
+.leaflet-container .leaflet-popup-pane {
+
+    z-index: 700 !important;
+
+}
