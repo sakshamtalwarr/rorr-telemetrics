@@ -2,11 +2,11 @@ import axios from "axios";
 
 
 // =====================================================
-// LOCAL BACKEND
+// BACKEND
 // =====================================================
 
 const API_URL =
-    "http://localhost:5000/api/auth";
+    "https://rorr-telemetrics-backend.onrender.com/api/auth";
 
 
 // =====================================================
