@@ -13,6 +13,86 @@ import {
 } from "./services/authApi";
 
 
+// =====================================================
+// RETRY PROFILE REQUEST
+// =====================================================
+
+async function getProfileWithRetry(
+    retries = 3
+) {
+
+    let lastError = null;
+
+
+    for (
+        let attempt = 1;
+        attempt <= retries;
+        attempt++
+    ) {
+
+        try {
+
+            console.log(
+                `🔄 Loading profile... Attempt ${attempt}/${retries}`
+            );
+
+
+            const user =
+                await getProfile();
+
+
+            if (user) {
+
+                return user;
+
+            }
+
+
+            throw new Error(
+                "Profile response was empty."
+            );
+
+
+        } catch (error) {
+
+            lastError = error;
+
+
+            console.warn(
+                `⚠️ Profile request failed. Attempt ${attempt}/${retries}`,
+                error
+            );
+
+
+            // Wait before retrying.
+            // Gives free-tier backend time to wake up.
+
+            if (attempt < retries) {
+
+                await new Promise(
+                    (resolve) =>
+                        setTimeout(
+                            resolve,
+                            3000 * attempt
+                        )
+                );
+
+            }
+
+        }
+
+    }
+
+
+    throw lastError;
+
+}
+
+
+// =====================================================
+// APP
+// =====================================================
+
 export default function App() {
 
     const [
@@ -55,9 +135,11 @@ export default function App() {
                     "🔒 No saved login session."
                 );
 
+
                 setCheckingAuth(false);
 
                 return;
+
             }
 
 
@@ -65,28 +147,85 @@ export default function App() {
             // TOKEN EXISTS
             // -------------------------------------------------
 
-            try {
+            console.log(
+                "🔐 Saved token found. Restoring session..."
+            );
 
-                console.log(
-                    "🔐 Saved token found. Restoring session..."
+
+            // -------------------------------------------------
+            // LOAD SAVED PROFILE IMMEDIATELY
+            // -------------------------------------------------
+
+            const savedProfile =
+                localStorage.getItem(
+                    "oben_profile"
                 );
 
 
-                const user =
-                    await getProfile();
+            if (savedProfile) {
+
+                try {
+
+                    const cachedUser =
+                        JSON.parse(
+                            savedProfile
+                        );
 
 
-                if (!user) {
+                    setProfile(
+                        cachedUser
+                    );
 
-                    throw new Error(
-                        "Unable to load customer profile."
+
+                    setAuthenticated(
+                        true
+                    );
+
+
+                    console.log(
+                        "📦 Restored cached profile."
+                    );
+
+
+                } catch (error) {
+
+                    console.warn(
+                        "⚠️ Saved profile is corrupted.",
+                        error
                     );
 
                 }
 
+            }
+
+
+            // Stop loading screen.
+            // The user can enter the dashboard even if
+            // the backend is still waking up.
+
+            setCheckingAuth(
+                false
+            );
+
+
+            // -------------------------------------------------
+            // VERIFY / REFRESH PROFILE IN BACKGROUND
+            // -------------------------------------------------
+
+            try {
+
+                const user =
+                    await getProfileWithRetry(3);
+
 
                 setProfile(
                     user
+                );
+
+
+                localStorage.setItem(
+                    "oben_profile",
+                    JSON.stringify(user)
                 );
 
 
@@ -96,35 +235,23 @@ export default function App() {
 
 
                 console.log(
-                    "✅ Existing session restored."
+                    "✅ Existing session verified with server."
                 );
 
 
             } catch (error) {
 
-                console.error(
-                    "❌ Saved session is invalid:",
+                console.warn(
+                    "⚠️ Server unavailable. Keeping saved session.",
                     error
                 );
 
 
-                clearAuth();
-
-
-                setProfile(
-                    null
-                );
-
-
-                setAuthenticated(
-                    false
-                );
-
-            } finally {
-
-                setCheckingAuth(
-                    false
-                );
+                // IMPORTANT:
+                // DO NOT clearAuth() here.
+                //
+                // A sleeping backend or temporary network
+                // error should NOT log the user out.
 
             }
 
@@ -150,7 +277,7 @@ export default function App() {
 
 
             const user =
-                await getProfile();
+                await getProfileWithRetry(3);
 
 
             if (!user) {
@@ -167,7 +294,8 @@ export default function App() {
             );
 
 
-            // Save profile locally for convenience
+            // Save profile locally
+
             localStorage.setItem(
                 "oben_profile",
                 JSON.stringify(user)
@@ -187,21 +315,17 @@ export default function App() {
         } catch (error) {
 
             console.error(
-                "❌ Failed to load profile:",
+                "❌ Failed to load profile after login:",
                 error
             );
 
 
-            clearAuth();
-
-
-            setProfile(
-                null
-            );
-
+            // Don't clear the token automatically.
+            // Login was successful, backend may simply
+            // still be waking up.
 
             setAuthenticated(
-                false
+                true
             );
 
         }
@@ -260,7 +384,7 @@ export default function App() {
                 "
             >
 
-                Checking session...
+                Restoring session...
 
             </div>
 
@@ -291,14 +415,20 @@ export default function App() {
     // =====================================================
 
     return (
+
         <div className="rorr-app-background">
-          <div className="rorr-app-content">
-            <Dashboard
-              profile={profile}
-              onLogout={handleLogout}
-            />
-          </div>
+
+            <div className="rorr-app-content">
+
+                <Dashboard
+                    profile={profile}
+                    onLogout={handleLogout}
+                />
+
+            </div>
+
         </div>
+
     );
 
 }
