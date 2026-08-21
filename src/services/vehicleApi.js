@@ -1,21 +1,36 @@
 import { BACKEND_HTTP } from "../config/api";
 
+
+// =====================================================
+// REQUEST HELPER
+// =====================================================
+
 async function request(url, options = {}) {
-  const response = await fetch(`${BACKEND_HTTP}${url}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  });
+
+  const response = await fetch(
+    `${BACKEND_HTTP}${url}`,
+    {
+      ...options,
+
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
+    }
+  );
+
 
   if (!response.ok) {
+
     throw new Error(
       `Request failed: ${response.status} ${response.statusText}`
     );
+
   }
 
+
   return response.json();
+
 }
 
 
@@ -25,33 +40,23 @@ async function request(url, options = {}) {
 
 export const vehicleApi = {
 
-  // ---------------------------------------------------
+
+  // ===================================================
   // VEHICLE DETAILS
-  // ---------------------------------------------------
+  // ===================================================
 
   getDetails() {
-    return request("/api/vehicle/details");
+
+    return request(
+      "/api/vehicle/details"
+    );
+
   },
 
 
-  // ---------------------------------------------------
+  // ===================================================
   // TRIPS
-  // ---------------------------------------------------
-  //
-  // Examples:
-  //
-  // getTrips()
-  // getTrips({ period: "today" })
-  // getTrips({ period: "week" })
-  // getTrips({ period: "month" })
-  //
-  // Custom:
-  //
-  // getTrips({
-  //   from: "2026-08-01",
-  //   to: "2026-08-19"
-  // })
-  // ---------------------------------------------------
+  // ===================================================
 
   getTrips(options = {}) {
 
@@ -91,38 +96,20 @@ export const vehicleApi = {
         "period",
         period || "week"
       );
+
     }
 
 
     return request(
       `/api/vehicle/trips?${params.toString()}`
     );
+
   },
 
 
-  // ---------------------------------------------------
+  // ===================================================
   // TRIP STATISTICS
-  // ---------------------------------------------------
-  //
-  // Examples:
-  //
-  // getTripStats({ period: "today" })
-  // getTripStats({ period: "week" })
-  // getTripStats({ period: "month" })
-  //
-  // Custom:
-  //
-  // getTripStats({
-  //   from: "2026-08-01",
-  //   to: "2026-08-19"
-  // })
-  // ---------------------------------------------------
-
-  getAlerts(page = 1, pageSize = 20) {
-  return request(
-    `/api/vehicle/alerts?page=${page}&pageSize=${pageSize}`
-  );
-},
+  // ===================================================
 
   getTripStats(options = {}) {
 
@@ -155,29 +142,36 @@ export const vehicleApi = {
         "period",
         period || "week"
       );
+
     }
 
 
     return request(
       `/api/vehicle/trip-stats?${params.toString()}`
     );
+
   },
 
 
-  // ---------------------------------------------------
+  // ===================================================
   // ALERTS
-  // ---------------------------------------------------
+  // ===================================================
 
-  getAlerts() {
+  getAlerts(
+    page = 1,
+    pageSize = 20
+  ) {
+
     return request(
-      "/api/vehicle/alerts"
+      `/api/vehicle/alerts?page=${page}&pageSize=${pageSize}`
     );
+
   },
 
 
-  // ---------------------------------------------------
+  // ===================================================
   // GEOCODING
-  // ---------------------------------------------------
+  // ===================================================
 
   geocode(lat, lng) {
 
@@ -192,17 +186,52 @@ export const vehicleApi = {
         }),
       }
     );
+
+  },
+
+
+  // ===================================================
+  // GEOFENCES
+  // ===================================================
+
+
+  // ---------------------------------------------------
+  // GET ALL GEOFENCES FOR A VEHICLE
+  // ---------------------------------------------------
+
+  getGeofences(vehicleId) {
+
+    if (!vehicleId) {
+
+      throw new Error(
+        "Vehicle ID is required to fetch geofences."
+      );
+
+    }
+
+
+    return request(
+      `/api/vehicle/geofence?vehicleId=${encodeURIComponent(
+        vehicleId
+      )}`
+    );
+
   },
 
 
   // ---------------------------------------------------
-  // GEOFENCE
+  // UPDATE A GEOFENCE
   // ---------------------------------------------------
+  updateGeofence(geofence) {
 
-  updateGeofence(
-    geofenceId,
-    radius
-  ) {
+    if (!geofence?.geofenceId) {
+
+      throw new Error(
+        "Geofence ID is required."
+      );
+
+    }
+
 
     return request(
       "/api/vehicle/geofence/update",
@@ -210,11 +239,38 @@ export const vehicleApi = {
         method: "POST",
 
         body: JSON.stringify({
-          geofenceId,
-          radius,
+
+          geofenceId:
+            geofence.geofenceId,
+
+          name:
+            geofence.name,
+
+          latitude:
+            geofence.lat,
+
+          longitude:
+            geofence.lng,
+
+          radius:
+            Number(geofence.radius),
+
+          notify: {
+            entry:
+              Boolean(
+                geofence.notify?.entry
+              ),
+
+            exit:
+              Boolean(
+                geofence.notify?.exit
+              ),
+          },
+
         }),
       }
     );
+
   },
 
 };

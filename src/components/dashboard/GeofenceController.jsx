@@ -3,6 +3,7 @@ import {
   ShieldCheck,
   ShieldOff,
   Save,
+  Crosshair,
 } from "lucide-react";
 
 import GlassCard from "../common/GlassCard";
@@ -13,6 +14,7 @@ export default function GeofenceController({
   onChange,
   onToggle,
   onSave,
+  onUseBikeLocation,
   saving = false,
 }) {
 
@@ -23,6 +25,20 @@ export default function GeofenceController({
     Boolean(geofence?.enabled);
 
 
+  function handleRadiusChange(event) {
+
+    const newRadius =
+      Number(event.target.value);
+
+
+    onChange({
+      ...geofence,
+      radius: newRadius,
+    });
+
+  }
+
+
   return (
 
     <GlassCard
@@ -30,9 +46,7 @@ export default function GeofenceController({
       hover={false}
     >
 
-      {/* =================================================
-          HEADER
-      ================================================= */}
+      {/* HEADER */}
 
       <div
         className="
@@ -102,8 +116,6 @@ export default function GeofenceController({
         </div>
 
 
-        {/* STATUS LIGHT */}
-
         <div
           className={`
             flex
@@ -155,9 +167,104 @@ export default function GeofenceController({
       </div>
 
 
-      {/* =================================================
-          RADIUS
-      ================================================= */}
+      {/* LOCATION */}
+
+      <div
+        className="
+          mb-6
+          rounded-xl
+          border
+          border-white/5
+          bg-black/20
+          p-3
+        "
+      >
+
+        <div
+          className="
+            flex
+            items-center
+            justify-between
+            gap-3
+          "
+        >
+
+          <div>
+
+            <div
+              className="
+                text-[8px]
+                font-bold
+                uppercase
+                tracking-widest
+                text-slate-600
+              "
+            >
+              Fence center
+            </div>
+
+            <div
+              className="
+                mt-1
+                font-mono
+                text-[9px]
+                text-slate-400
+              "
+            >
+              {Number.isFinite(Number(geofence?.lat)) &&
+              Number.isFinite(Number(geofence?.lng))
+                ? `${Number(geofence.lat).toFixed(6)}, ${Number(
+                    geofence.lng
+                  ).toFixed(6)}`
+                : "Location not selected"}
+            </div>
+
+          </div>
+
+
+          <button
+            type="button"
+            onClick={onUseBikeLocation}
+            disabled={saving}
+            className="
+              flex
+              shrink-0
+              items-center
+              gap-2
+              rounded-lg
+              border
+              border-blue-500/20
+              bg-blue-500/10
+              px-3
+              py-2
+              text-[7px]
+              font-bold
+              uppercase
+              tracking-widest
+              text-blue-300
+              transition
+              hover:bg-blue-500/15
+              disabled:opacity-40
+            "
+          >
+
+            <Crosshair
+              className="
+                h-3
+                w-3
+              "
+            />
+
+            Bike
+
+          </button>
+
+        </div>
+
+      </div>
+
+
+      {/* RADIUS */}
 
       <div>
 
@@ -220,17 +327,13 @@ export default function GeofenceController({
           max="5000"
           step="50"
           value={radius}
-          onChange={(event) =>
-            onChange(
-              Number(
-                event.target.value
-              )
-            )
-          }
+          onChange={handleRadiusChange}
+          disabled={saving}
           className="
             w-full
             accent-indigo-500
             cursor-pointer
+            disabled:opacity-40
           "
         />
 
@@ -247,11 +350,8 @@ export default function GeofenceController({
         >
 
           <span>50 M</span>
-
           <span>1 KM</span>
-
           <span>2.5 KM</span>
-
           <span>5 KM</span>
 
         </div>
@@ -259,15 +359,13 @@ export default function GeofenceController({
       </div>
 
 
-      {/* =================================================
-          CONTROLS
-      ================================================= */}
+      {/* CONTROLS */}
 
       <div
         className="
           mt-7
           grid
-          grid-cols-2
+          grid-cols-3
           gap-3
         "
       >
@@ -283,7 +381,7 @@ export default function GeofenceController({
             gap-2
             rounded-xl
             border
-            px-4
+            px-3
             py-3
             text-[8px]
             font-bold
@@ -312,19 +410,48 @@ export default function GeofenceController({
 
           {enabled ? (
             <>
-              <ShieldOff
-                className="h-3.5 w-3.5"
-              />
+              <ShieldOff className="h-3.5 w-3.5" />
               Disarm
             </>
           ) : (
             <>
-              <ShieldCheck
-                className="h-3.5 w-3.5"
-              />
-              Arm Fence
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Arm
             </>
           )}
+
+        </button>
+
+
+        <button
+          type="button"
+          onClick={onUseBikeLocation}
+          disabled={saving}
+          className="
+            flex
+            items-center
+            justify-center
+            gap-2
+            rounded-xl
+            border
+            border-blue-500/20
+            bg-blue-500/10
+            px-3
+            py-3
+            text-[8px]
+            font-bold
+            uppercase
+            tracking-widest
+            text-blue-300
+            transition
+            hover:bg-blue-500/15
+            disabled:opacity-40
+          "
+        >
+
+          <Crosshair className="h-3.5 w-3.5" />
+
+          Locate
 
         </button>
 
@@ -342,7 +469,7 @@ export default function GeofenceController({
             border
             border-indigo-500/20
             bg-indigo-500/10
-            px-4
+            px-3
             py-3
             text-[8px]
             font-bold
@@ -369,17 +496,15 @@ export default function GeofenceController({
           />
 
           {saving
-            ? "Saving..."
-            : "Save Fence"}
+            ? "Saving"
+            : "Save"}
 
         </button>
 
       </div>
 
 
-      {/* =================================================
-          STATUS
-      ================================================= */}
+      {/* STATUS */}
 
       <div
         className="
@@ -433,6 +558,7 @@ export default function GeofenceController({
 
 
         {enabled && (
+
           <p
             className="
               mt-2
@@ -442,10 +568,10 @@ export default function GeofenceController({
               text-slate-700
             "
           >
-            Vehicle movement outside this
-            boundary can be detected by the
-            geofence system.
+            Move the fence center directly on the map or use
+            the bike's current location. Save to apply changes.
           </p>
+
         )}
 
       </div>
@@ -453,4 +579,5 @@ export default function GeofenceController({
     </GlassCard>
 
   );
+
 }
