@@ -359,63 +359,116 @@ body {
 
 }
 
-
 /* =====================================================
-   LOGIN PROGRESS BAR
+   LOGIN CARD — ROTATING BORDER LIGHT
    ===================================================== */
 
-.login-progress {
+@keyframes loginBorderRotate {
 
-    position: relative;
+    0% {
+        transform:
+            translate(-50%, -50%)
+            rotate(0deg);
+    }
 
-    overflow: hidden;
+    100% {
+        transform:
+            translate(-50%, -50%)
+            rotate(360deg);
+    }
 
 }
 
 
-.login-progress::after {
+.login-card-shell {
+
+    position: relative;
+
+    isolation: isolate;
+
+    overflow: hidden;
+
+    border-radius: 1.5rem;
+
+    padding: 1px;
+
+    background:
+        rgba(255, 255, 255, 0.08);
+
+}
+
+
+/* Rotating light beam */
+
+.login-card-shell::before {
 
     content: "";
 
     position: absolute;
 
-    top: 0;
-    bottom: 0;
+    top: 50%;
+    left: 50%;
 
-    width: 45%;
+    width: 220%;
+    height: 220%;
 
     background:
-        linear-gradient(
-            90deg,
-            transparent,
-            rgba(255, 255, 255, 0.25),
-            rgba(129, 140, 248, 0.9),
-            rgba(255, 255, 255, 0.25),
-            transparent
+        conic-gradient(
+            from 0deg,
+            transparent 0deg,
+            transparent 290deg,
+            rgba(79, 70, 229, 0.1) 305deg,
+            rgba(99, 102, 241, 0.9) 325deg,
+            rgba(129, 140, 248, 1) 340deg,
+            rgba(79, 70, 229, 0.3) 350deg,
+            transparent 360deg
         );
 
-    filter:
-        blur(1px);
-
     animation:
-        loginProgress 1.3s linear infinite;
+        loginBorderRotate
+        4s
+        linear
+        infinite;
+
+    pointer-events: none;
 
 }
 
 
-@keyframes loginProgress {
+/* Actual dark card covering the center */
 
-    0% {
-        transform: translateX(-140%);
-    }
+.login-card-shell::after {
 
-    100% {
-        transform: translateX(320%);
-    }
+    content: "";
+
+    position: absolute;
+
+    inset: 1px;
+
+    border-radius: calc(1.5rem - 1px);
+
+    background:
+        rgba(8, 12, 16, 0.96);
+
+    backdrop-filter:
+        blur(24px);
+
+    z-index: 0;
+
+    pointer-events: none;
 
 }
 
 
+/* Content stays above the background */
+
+.login-card-content {
+
+    position: relative;
+
+    z-index: 1;
+
+}
 /* =====================================================
    BUTTON LOADING SHIMMER
    ===================================================== */
