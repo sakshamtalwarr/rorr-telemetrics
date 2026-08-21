@@ -22,7 +22,8 @@ import FaultPanel from "./components/dashboard/FaultPanel";
 import RidingTrends from "./components/dashboard/RidingTrends";
 import TripLogs from "./components/dashboard/TripLogs";
 import Alerts from "./components/dashboard/Alerts";
-
+import ProfilePanel from "./components/dashboard/ProfilePanel";
+import MaintenanceTracker from "./components/dashboard/MaintenanceTracker";
 import useVehicleTelemetry from "./hooks/useVehicleTelemetry";
 import { vehicleApi } from "./services/vehicleApi";
 
@@ -77,7 +78,10 @@ export default function Dashboard({
     setAlerts,
   ] = useState([]);
 
-
+  const [
+  showProfile,
+  setShowProfile,
+] = useState(false);
   const [
     trips,
     setTrips,
@@ -814,11 +818,31 @@ export default function Dashboard({
           profile={
             profile
           }
+          onProfileClick={() => {
+            setShowProfile((current) => !current);
+        }}
 
           onLogout={
             onLogout
           }
         />
+        {/* =====================================================
+            PROFILE PANEL
+        ===================================================== */}
+
+        {showProfile && (
+
+        <div className="mt-6">
+
+            <ProfilePanel
+            profile={profile}
+            liveData={liveData}
+            onLogout={onLogout}
+            />
+
+  </div>
+
+)}
 
 
         {/* =============================================
@@ -905,7 +929,33 @@ export default function Dashboard({
           liveData={liveData}
           connectionStatus={connectionStatus}
         />
+                
+        {/* =============================================
+            PROFILE + MAINTENANCE
+        ============================================= */}
 
+        <section
+        className="
+            grid
+            grid-cols-1
+            xl:grid-cols-2
+            gap-6
+        "
+        >
+
+        <ProfilePanel
+            profile={profile}
+            liveData={liveData}
+            onLogout={onLogout}
+        />
+
+        <MaintenanceTracker
+            odometer={
+            liveData?.odometer ?? 0
+            }
+        />
+
+        </section>
 
         {/* =============================================
             MAP + GEOFENCE
@@ -1126,6 +1176,7 @@ export default function Dashboard({
           />
 
         )}
+            
 
       </main>
 
