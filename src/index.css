@@ -6,6 +6,26 @@
 
 
 /* =====================================================
+   GLOBAL
+   ===================================================== */
+
+html {
+    background: #050505;
+}
+
+body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+
+    background: #050505;
+    color: #f8fafc;
+
+    overflow-x: hidden;
+}
+
+
+/* =====================================================
    CUSTOM SCROLLBAR
    ===================================================== */
 
@@ -24,10 +44,12 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.22);
 }
+
+
 /* =====================================================
-   RORR TELEMETRICS — VISIBLE ANIMATED BACKGROUND
+   RORR TELEMETRICS — DASHBOARD BACKGROUND
    ===================================================== */
 
 @keyframes rorrAmbientMove {
@@ -64,6 +86,10 @@
 }
 
 
+/* =====================================================
+   MAIN APP BACKGROUND
+   ===================================================== */
+
 .rorr-app-background {
 
     position: relative;
@@ -72,14 +98,13 @@
 
     overflow: hidden;
 
-    background:
-        #050505;
+    background: #050505;
 
 }
 
 
 /* =====================================================
-   LARGE AMBIENT GLOW
+   LARGE INDIGO AMBIENT GLOW
    ===================================================== */
 
 .rorr-app-background::before {
@@ -116,7 +141,7 @@
 
 
 /* =====================================================
-   SECOND GLOW
+   SECOND BLUE AMBIENT GLOW
    ===================================================== */
 
 .rorr-app-background::after {
@@ -166,6 +191,594 @@
 
 }
 
+
+/* =====================================================
+   LOGIN PAGE
+   ===================================================== */
+
+.login-background {
+
+    position: relative;
+
+    min-height: 100vh;
+
+    overflow: hidden;
+
+    background:
+        radial-gradient(
+            circle at 15% 10%,
+            rgba(79, 70, 229, 0.12),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 85% 85%,
+            rgba(16, 185, 129, 0.08),
+            transparent 30%
+        ),
+        #050505;
+
+}
+
+
+/* =====================================================
+   LOGIN CARD ANIMATED BORDER
+   ===================================================== */
+
+.login-card {
+
+    position: relative;
+
+    isolation: isolate;
+
+    border-radius: 1.5rem;
+
+    overflow: hidden;
+
+}
+
+
+/*
+   Animated colored light around card.
+*/
+
+.login-card::before {
+
+    content: "";
+
+    position: absolute;
+
+    z-index: -2;
+
+    inset: -2px;
+
+    border-radius: inherit;
+
+    background:
+        conic-gradient(
+            from 0deg,
+            transparent 0deg,
+            transparent 60deg,
+            rgba(99, 102, 241, 0.9) 95deg,
+            rgba(56, 189, 248, 0.8) 125deg,
+            rgba(16, 185, 129, 0.75) 155deg,
+            transparent 200deg,
+            transparent 360deg
+        );
+
+    animation:
+        loginBorderRotate 5s linear infinite;
+
+}
+
+
+/*
+   Inner dark layer.
+
+   This leaves only a thin animated
+   border visible around the card.
+*/
+
+.login-card::after {
+
+    content: "";
+
+    position: absolute;
+
+    z-index: -1;
+
+    inset: 1px;
+
+    border-radius: calc(1.5rem - 1px);
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(20, 20, 28, 0.96),
+            rgba(7, 7, 10, 0.98)
+        );
+
+    backdrop-filter:
+        blur(24px);
+
+}
+
+
+/* =====================================================
+   ANIMATED BORDER ROTATION
+   ===================================================== */
+
+@keyframes loginBorderRotate {
+
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+
+}
+
+
+/* =====================================================
+   LOGIN CARD ENTRANCE
+   ===================================================== */
+
+@keyframes loginCardEnter {
+
+    0% {
+
+        opacity: 0;
+
+        transform:
+            translateY(18px)
+            scale(0.985);
+
+    }
+
+    100% {
+
+        opacity: 1;
+
+        transform:
+            translateY(0)
+            scale(1);
+
+    }
+
+}
+
+
+.login-card-enter {
+
+    animation:
+        loginCardEnter
+        0.7s
+        cubic-bezier(0.16, 1, 0.3, 1)
+        both;
+
+}
+
+
+/* =====================================================
+   LOGIN PROGRESS BAR
+   ===================================================== */
+
+.login-progress {
+
+    position: relative;
+
+    overflow: hidden;
+
+}
+
+
+.login-progress::after {
+
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    bottom: 0;
+
+    width: 45%;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.25),
+            rgba(129, 140, 248, 0.9),
+            rgba(255, 255, 255, 0.25),
+            transparent
+        );
+
+    filter:
+        blur(1px);
+
+    animation:
+        loginProgress 1.3s linear infinite;
+
+}
+
+
+@keyframes loginProgress {
+
+    0% {
+        transform: translateX(-140%);
+    }
+
+    100% {
+        transform: translateX(320%);
+    }
+
+}
+
+
+/* =====================================================
+   BUTTON LOADING SHIMMER
+   ===================================================== */
+
+.button-loading {
+
+    position: relative;
+
+    overflow: hidden;
+
+}
+
+
+.button-loading::after {
+
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    bottom: 0;
+
+    left: -100%;
+
+    width: 70%;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.18),
+            transparent
+        );
+
+    animation:
+        buttonShimmer 1.4s ease-in-out infinite;
+
+}
+
+
+@keyframes buttonShimmer {
+
+    0% {
+        left: -100%;
+    }
+
+    100% {
+        left: 150%;
+    }
+
+}
+
+
+/* =====================================================
+   FADE IN
+   ===================================================== */
+
+@keyframes fadeIn {
+
+    from {
+
+        opacity: 0;
+
+        transform:
+            translateY(8px);
+
+    }
+
+    to {
+
+        opacity: 1;
+
+        transform:
+            translateY(0);
+
+    }
+
+}
+
+
+.fade-in {
+
+    animation:
+        fadeIn
+        0.45s
+        ease-out
+        both;
+
+}
+
+
+/* =====================================================
+   FADE IN SCALE
+   ===================================================== */
+
+@keyframes fadeInScale {
+
+    from {
+
+        opacity: 0;
+
+        transform:
+            translateY(8px)
+            scale(0.98);
+
+    }
+
+    to {
+
+        opacity: 1;
+
+        transform:
+            translateY(0)
+            scale(1);
+
+    }
+
+}
+
+
+.fade-in-scale {
+
+    animation:
+        fadeInScale
+        0.4s
+        cubic-bezier(0.16, 1, 0.3, 1)
+        both;
+
+}
+
+
+/* =====================================================
+   TOP LOGIN NOTIFICATION
+   ===================================================== */
+
+@keyframes loginNotification {
+
+    0% {
+
+        opacity: 0;
+
+        transform:
+            translateY(-16px)
+            scale(0.96);
+
+    }
+
+    12% {
+
+        opacity: 1;
+
+        transform:
+            translateY(0)
+            scale(1);
+
+    }
+
+    78% {
+
+        opacity: 1;
+
+        transform:
+            translateY(0)
+            scale(1);
+
+    }
+
+    100% {
+
+        opacity: 0;
+
+        transform:
+            translateY(-10px)
+            scale(0.98);
+
+    }
+
+}
+
+
+.login-notification {
+
+    animation:
+        loginNotification
+        4.5s
+        ease-in-out
+        forwards;
+
+}
+
+
+/* =====================================================
+   SUCCESS PULSE
+   ===================================================== */
+
+@keyframes successPulse {
+
+    0% {
+
+        box-shadow:
+            0 0 0 0
+            rgba(16, 185, 129, 0.45);
+
+    }
+
+    70% {
+
+        box-shadow:
+            0 0 0 12px
+            rgba(16, 185, 129, 0);
+
+    }
+
+    100% {
+
+        box-shadow:
+            0 0 0 0
+            rgba(16, 185, 129, 0);
+
+    }
+
+}
+
+
+.success-pulse {
+
+    animation:
+        successPulse
+        1.6s
+        ease-out
+        infinite;
+
+}
+
+
+/* =====================================================
+   SUBTLE ICON FLOAT
+   ===================================================== */
+
+@keyframes subtleFloat {
+
+    0% {
+
+        transform:
+            translateY(0);
+
+    }
+
+    50% {
+
+        transform:
+            translateY(-4px);
+
+    }
+
+    100% {
+
+        transform:
+            translateY(0);
+
+    }
+
+}
+
+
+.subtle-float {
+
+    animation:
+        subtleFloat
+        3s
+        ease-in-out
+        infinite;
+
+}
+
+
+/* =====================================================
+   GLOW PULSE
+   ===================================================== */
+
+@keyframes glowPulse {
+
+    0% {
+
+        opacity: 0.35;
+
+        transform:
+            scale(0.96);
+
+    }
+
+    50% {
+
+        opacity: 0.8;
+
+        transform:
+            scale(1.04);
+
+    }
+
+    100% {
+
+        opacity: 0.35;
+
+        transform:
+            scale(0.96);
+
+    }
+
+}
+
+
+.glow-pulse {
+
+    animation:
+        glowPulse
+        3s
+        ease-in-out
+        infinite;
+
+}
+
+
+/* =====================================================
+   ERROR SHAKE
+   ===================================================== */
+
+@keyframes errorShake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    20% {
+        transform: translateX(-5px);
+    }
+
+    40% {
+        transform: translateX(5px);
+    }
+
+    60% {
+        transform: translateX(-3px);
+    }
+
+    80% {
+        transform: translateX(3px);
+    }
+
+}
+
+
+.error-shake {
+
+    animation:
+        errorShake
+        0.35s
+        ease-in-out;
+
+}
+
+
 /* =====================================================
    LEAFLET / TAILWIND COMPATIBILITY
    ===================================================== */
@@ -181,8 +794,7 @@
 }
 
 
-/* Prevent Tailwind Preflight from
-   resizing Leaflet tiles */
+/* Prevent Tailwind Preflight from resizing Leaflet tiles */
 
 .leaflet-container .leaflet-tile {
 
@@ -197,7 +809,7 @@
 }
 
 
-/* Make sure tile images are actually visible */
+/* Make sure tile images are visible */
 
 .leaflet-container img.leaflet-tile {
 
@@ -220,11 +832,13 @@
 
 }
 
+
 .leaflet-container .leaflet-overlay-pane {
 
     z-index: 400 !important;
 
 }
+
 
 .leaflet-container .leaflet-marker-pane {
 
@@ -232,8 +846,64 @@
 
 }
 
+
 .leaflet-container .leaflet-popup-pane {
 
     z-index: 700 !important;
+
+}
+
+
+/* =====================================================
+   LEAFLET GEOFENCE
+   ===================================================== */
+
+.leaflet-interactive {
+
+    cursor: grab;
+
+}
+
+
+.leaflet-interactive:active {
+
+    cursor: grabbing;
+
+}
+
+
+/* =====================================================
+   SMOOTH GLOBAL TRANSITIONS
+   ===================================================== */
+
+button,
+input,
+select,
+textarea {
+
+    -webkit-tap-highlight-color: transparent;
+
+}
+
+
+/* =====================================================
+   REDUCED MOTION ACCESSIBILITY
+   ===================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+
+        animation-duration: 0.01ms !important;
+
+        animation-iteration-count: 1 !important;
+
+        transition-duration: 0.01ms !important;
+
+        scroll-behavior: auto !important;
+
+    }
 
 }
