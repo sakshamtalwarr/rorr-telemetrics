@@ -12,57 +12,48 @@ import {
   clearAuth,
 } from "./services/authApi";
 
-
 // =====================================================
-// STORAGE KEYS
+// STORAGE
 // =====================================================
 
 const PROFILE_STORAGE_KEY =
   "oben_profile";
 
-
 // =====================================================
-// GET JWT PAYLOAD
+// JWT PAYLOAD
 // =====================================================
 //
-// This only reads the expiry from the JWT.
-// It does NOT verify the JWT signature.
-//
+// This reads the JWT payload locally.
+// It DOES NOT verify the JWT signature.
+// The server remains responsible for actual
+// authentication.
+// =====================================================
 
 function getTokenPayload(token) {
-
   try {
-
     if (!token) {
       return null;
     }
 
-
     const parts =
       token.split(".");
-
 
     if (parts.length !== 3) {
       return null;
     }
 
-
-    const base64Url =
-      parts[1];
-
+    const base64Url = parts[1];
 
     const base64 =
       base64Url
         .replace(/-/g, "+")
         .replace(/_/g, "/");
 
-
     const json =
       decodeURIComponent(
         atob(base64)
           .split("")
           .map((character) => {
-
             const hex =
               character
                 .charCodeAt(0)
@@ -70,42 +61,37 @@ function getTokenPayload(token) {
                 .padStart(2, "0");
 
             return `%${hex}`;
-
           })
           .join("")
       );
 
-
-    return JSON.parse(
-      json
-    );
+    return JSON.parse(json);
 
   } catch (error) {
-
     console.warn(
       "⚠️ Unable to read token payload:",
       error
     );
 
     return null;
-
   }
-
 }
 
-
 // =====================================================
-// CHECK TOKEN EXPIRY
+// TOKEN EXPIRY
 // =====================================================
 
 function isTokenExpired(token) {
-
   const payload =
     getTokenPayload(token);
 
-
-  // If we cannot determine expiry,
-  // let the server decide.
+  /*
+   * If we cannot determine the expiry,
+   * don't automatically log the user out.
+   *
+   * The backend can decide whether the token
+   * is valid.
+   */
 
   if (
     !payload ||
@@ -114,29 +100,23 @@ function isTokenExpired(token) {
     return false;
   }
 
-
   const currentTime =
     Math.floor(
       Date.now() / 1000
     );
 
-
   return (
     currentTime >= payload.exp
   );
-
 }
 
-
 // =====================================================
-// GET TOKEN EXPIRY TIME
+// TOKEN EXPIRY DATE
 // =====================================================
 
 function getTokenExpiry(token) {
-
   const payload =
     getTokenPayload(token);
-
 
   if (
     !payload ||
@@ -145,25 +125,20 @@ function getTokenExpiry(token) {
     return null;
   }
 
-
   return new Date(
     payload.exp * 1000
   );
-
 }
 
-
 // =====================================================
-// CHECK AUTHENTICATION ERROR
+// AUTHENTICATION ERROR
 // =====================================================
 
 function isAuthenticationError(error) {
-
   const status =
     error?.status ||
     error?.statusCode ||
     error?.response?.status;
-
 
   if (
     status === 401 ||
@@ -172,12 +147,10 @@ function isAuthenticationError(error) {
     return true;
   }
 
-
   const message =
     String(
       error?.message || ""
     ).toLowerCase();
-
 
   return (
     message.includes("unauthorized") ||
@@ -186,180 +159,149 @@ function isAuthenticationError(error) {
     message.includes("token expired") ||
     message.includes("jwt expired")
   );
-
 }
-
 
 // =====================================================
 // GET SAVED PROFILE
 // =====================================================
 
 function getSavedProfile() {
-
   try {
-
     const savedProfile =
       localStorage.getItem(
         PROFILE_STORAGE_KEY
       );
 
-
     if (!savedProfile) {
       return null;
     }
-
 
     return JSON.parse(
       savedProfile
     );
 
   } catch (error) {
-
     console.warn(
       "⚠️ Saved profile is corrupted:",
       error
     );
 
-
     localStorage.removeItem(
       PROFILE_STORAGE_KEY
     );
 
-
     return null;
-
   }
-
 }
-
 
 // =====================================================
 // SAVE PROFILE
 // =====================================================
 
 function saveProfile(profile) {
-
   if (!profile) {
     return;
   }
 
-
   try {
-
     localStorage.setItem(
       PROFILE_STORAGE_KEY,
       JSON.stringify(profile)
     );
-
   } catch (error) {
-
     console.warn(
       "⚠️ Failed to save profile:",
       error
     );
-
   }
-
 }
-
 
 // =====================================================
 // CLEAR LOCAL SESSION
 // =====================================================
 
 function clearLocalSession() {
-
   clearAuth();
-
 
   localStorage.removeItem(
     PROFILE_STORAGE_KEY
   );
-
 }
 
-
 // =====================================================
-// RETRY PROFILE REQUEST
+// PROFILE RETRY
+// =====================================================
+//
+// Render may be sleeping.
+//
+// We retry several times before giving up.
+// IMPORTANT: giving up DOES NOT log the user out.
 // =====================================================
 
 async function getProfileWithRetry(
-  retries = 3
+  retries = 5
 ) {
-
   let lastError = null;
-
 
   for (
     let attempt = 1;
     attempt <= retries;
     attempt++
   ) {
-
     try {
-
       console.log(
         `🔄 Loading profile... Attempt ${attempt}/${retries}`
       );
 
-
       const user =
         await getProfile();
 
-
       if (user) {
-
         return user;
-
       }
-
 
       throw new Error(
         "Profile response was empty."
       );
 
-
     } catch (error) {
-
-      lastError =
-        error;
-
+      lastError = error;
 
       console.warn(
         `⚠️ Profile request failed. Attempt ${attempt}/${retries}`,
         error
       );
 
-
-      // -----------------------------------------------
-      // STOP RETRYING IF TOKEN IS ACTUALLY INVALID
-      // -----------------------------------------------
+      // =================================================
+      // STOP ONLY FOR REAL AUTH FAILURE
+      // =================================================
 
       if (
         isAuthenticationError(error)
       ) {
+        console.warn(
+          "🔐 Server says customer token is unauthorized."
+        );
 
         throw error;
-
       }
 
-
-      // -----------------------------------------------
-      // WAIT BEFORE NEXT ATTEMPT
-      // -----------------------------------------------
+      // =================================================
+      // RETRY
+      // =================================================
 
       if (
         attempt < retries
       ) {
-
         const delay =
-          2000 * attempt;
-
+          Math.min(
+            3000 * attempt,
+            10000
+          );
 
         console.log(
           `⏳ Retrying in ${delay / 1000}s...`
         );
-
 
         await new Promise(
           (resolve) =>
@@ -368,25 +310,39 @@ async function getProfileWithRetry(
               delay
             )
         );
-
       }
-
     }
-
   }
 
-
   throw lastError;
-
 }
 
+// =====================================================
+// FALLBACK PROFILE
+// =====================================================
+//
+// If the token is valid but Render is temporarily
+// unavailable and we don't have a cached profile,
+// give Dashboard a minimal profile instead of
+// showing Login.
+// =====================================================
+
+function createFallbackProfile() {
+  return {
+    firstName: "Rorr",
+    lastName: "Rider",
+    mobileNumber:
+      localStorage.getItem(
+        "oben_mobile_number"
+      ) || "",
+  };
+}
 
 // =====================================================
 // APP
 // =====================================================
 
 export default function App() {
-
 
   // ===================================================
   // STATE
@@ -397,43 +353,35 @@ export default function App() {
     setAuthenticated,
   ] = useState(false);
 
-
   const [
     profile,
     setProfile,
   ] = useState(null);
-
 
   const [
     checkingAuth,
     setCheckingAuth,
   ] = useState(true);
 
-
   // ===================================================
-  // RESTORE SAVED LOGIN
+  // RESTORE SESSION
   // ===================================================
 
   useEffect(() => {
-
-    let cancelled =
-      false;
-
+    let cancelled = false;
 
     async function restoreSession() {
 
-
-      // ------------------------------------------------
+      // =================================================
       // GET SAVED TOKEN
-      // ------------------------------------------------
+      // =================================================
 
       const token =
         getAccessToken();
 
-
-      // ------------------------------------------------
+      // =================================================
       // NO TOKEN
-      // ------------------------------------------------
+      // =================================================
 
       if (!token) {
 
@@ -441,29 +389,22 @@ export default function App() {
           "🔒 No saved login session."
         );
 
-
         if (!cancelled) {
-
-          setCheckingAuth(
-            false
-          );
-
+          setAuthenticated(false);
+          setProfile(null);
+          setCheckingAuth(false);
         }
 
-
         return;
-
       }
 
-
       console.log(
-        "🔐 Saved token found."
+        "🔐 Saved access token found."
       );
 
-
-      // ------------------------------------------------
-      // CHECK JWT EXPIRY
-      // ------------------------------------------------
+      // =================================================
+      // CHECK LOCAL JWT EXPIRY
+      // =================================================
 
       if (
         isTokenExpired(token)
@@ -472,46 +413,28 @@ export default function App() {
         const expiry =
           getTokenExpiry(token);
 
-
         console.warn(
           "⌛ Saved access token has expired:",
           expiry
         );
 
-
-        // Token is genuinely expired.
-        // This is different from a network failure.
-
         clearLocalSession();
 
-
         if (!cancelled) {
-
-          setProfile(
-            null
-          );
-
-
-          setAuthenticated(
-            false
-          );
-
-
-          setCheckingAuth(
-            false
-          );
-
+          setProfile(null);
+          setAuthenticated(false);
+          setCheckingAuth(false);
         }
 
-
         return;
-
       }
 
+      // =================================================
+      // TOKEN IS LOCALLY VALID
+      // =================================================
 
       const expiry =
         getTokenExpiry(token);
-
 
       console.log(
         "🔐 Token is still valid.",
@@ -520,21 +443,20 @@ export default function App() {
           : ""
       );
 
-
-      // ------------------------------------------------
-      // RESTORE CACHED PROFILE IMMEDIATELY
-      // ------------------------------------------------
+      // =================================================
+      // RESTORE CACHED PROFILE
+      // =================================================
 
       const cachedUser =
         getSavedProfile();
 
-
-      if (cachedUser) {
+      if (
+        cachedUser
+      ) {
 
         console.log(
-          "📦 Restoring cached profile."
+          "📦 Restoring cached profile immediately."
         );
-
 
         if (!cancelled) {
 
@@ -542,89 +464,84 @@ export default function App() {
             cachedUser
           );
 
+          /*
+           * IMPORTANT:
+           *
+           * The user is considered logged in
+           * immediately because the local token
+           * is still valid.
+           */
 
           setAuthenticated(
             true
           );
 
-
-          // Stop loading immediately.
-          // Dashboard can open while profile refreshes.
-
           setCheckingAuth(
             false
           );
-
         }
+      }
 
-      } else {
+      // =================================================
+      // NO CACHED PROFILE
+      // =================================================
+
+      if (
+        !cachedUser
+      ) {
 
         console.log(
           "📭 No cached profile found."
         );
 
+        /*
+         * We DO NOT show Login here.
+         *
+         * The token is still valid.
+         *
+         * We temporarily keep checking while the
+         * backend wakes up.
+         */
       }
 
-
-      // ------------------------------------------------
-      // IF NO CACHED PROFILE,
-      // KEEP LOADING UNTIL WE TRY THE SERVER
-      // ------------------------------------------------
-
-      if (!cachedUser) {
-
-        if (!cancelled) {
-
-          setCheckingAuth(
-            true
-          );
-
-        }
-
-      }
-
-
-      // ------------------------------------------------
-      // VERIFY PROFILE IN BACKGROUND
-      // ------------------------------------------------
+      // =================================================
+      // REFRESH PROFILE FROM SERVER
+      // =================================================
 
       try {
 
         const user =
           await getProfileWithRetry(
-            3
+            5
           );
-
 
         if (cancelled) {
           return;
         }
 
+        // =================================================
+        // SAVE NEW PROFILE
+        // =================================================
 
         setProfile(
           user
         );
 
-
         saveProfile(
           user
         );
-
 
         setAuthenticated(
           true
         );
 
-
         setCheckingAuth(
           false
         );
 
-
         console.log(
           "✅ Existing session verified with server."
         );
-
 
       } catch (error) {
 
@@ -632,102 +549,77 @@ export default function App() {
           return;
         }
 
-
-        // ----------------------------------------------
-        // REAL AUTHENTICATION FAILURE
-        // ----------------------------------------------
+        // =================================================
+        // REAL AUTH FAILURE
+        // =================================================
 
         if (
           isAuthenticationError(error)
         ) {
 
           console.warn(
-            "🔒 Session is no longer authorized."
+            "🔒 Customer session is no longer authorized."
           );
-
 
           clearLocalSession();
 
-
-          setProfile(
-            null
-          );
-
-
-          setAuthenticated(
-            false
-          );
-
-
-          setCheckingAuth(
-            false
-          );
-
+          setProfile(null);
+          setAuthenticated(false);
+          setCheckingAuth(false);
 
           return;
-
         }
 
-
-        // ----------------------------------------------
-        // NETWORK / SERVER FAILURE
-        // ----------------------------------------------
+        // =================================================
+        // SERVER / NETWORK FAILURE
+        // =================================================
 
         console.warn(
-          "🌐 Server unavailable. Keeping local session.",
+          "🌐 Backend unavailable. Keeping local login session.",
           error
         );
 
+        /*
+         * THIS IS THE IMPORTANT PART.
+         *
+         * Render being asleep does NOT mean
+         * the customer is logged out.
+         */
 
-        // If we have a cached profile,
-        // keep the user logged in.
+        if (!cancelled) {
 
-        if (cachedUser) {
+          if (cachedUser) {
+
+            setProfile(
+              cachedUser
+            );
+
+          } else {
+
+            setProfile(
+              createFallbackProfile()
+            );
+
+          }
 
           setAuthenticated(
             true
           );
 
-
           setCheckingAuth(
             false
           );
-
-
-          return;
-
         }
-
-
-        // No cached profile and server unavailable.
-        // We cannot construct the dashboard safely.
-
-        setAuthenticated(
-          false
-        );
-
-
-        setCheckingAuth(
-          false
-        );
-
       }
-
     }
-
 
     restoreSession();
 
-
     return () => {
-
-      cancelled =
-        true;
-
+      cancelled = true;
     };
 
   }, []);
-
 
   // ===================================================
   // LOGIN SUCCESS
@@ -741,27 +633,22 @@ export default function App() {
         "🔐 OTP login successful."
       );
 
-
-      // ----------------------------------------------
-      // VERIFY TOKEN WAS ACTUALLY SAVED
-      // ----------------------------------------------
+      // =================================================
+      // TOKEN SHOULD ALREADY BE SAVED BY verifyOtp()
+      // =================================================
 
       const token =
         getAccessToken();
 
-
       if (!token) {
-
         throw new Error(
           "Login succeeded but no access token was saved."
         );
-
       }
 
-
-      // ----------------------------------------------
+      // =================================================
       // CHECK TOKEN
-      // ----------------------------------------------
+      // =================================================
 
       if (
         isTokenExpired(token)
@@ -770,13 +657,10 @@ export default function App() {
         throw new Error(
           "Received an expired access token."
         );
-
       }
-
 
       const expiry =
         getTokenExpiry(token);
-
 
       console.log(
         "🎫 New access token saved.",
@@ -785,47 +669,88 @@ export default function App() {
           : ""
       );
 
-
-      // ----------------------------------------------
-      // LOAD PROFILE
-      // ----------------------------------------------
-
-      const user =
-        await getProfileWithRetry(
-          3
-        );
-
-
-      if (!user) {
-
-        throw new Error(
-          "Unable to load customer profile."
-        );
-
-      }
-
-
-      setProfile(
-        user
-      );
-
-
-      // Save profile for future app reloads.
-
-      saveProfile(
-        user
-      );
-
+      /*
+       * Mark the user authenticated immediately.
+       *
+       * Even if Render needs time to wake up,
+       * the OTP login itself already succeeded.
+       */
 
       setAuthenticated(
         true
       );
 
-
-      console.log(
-        "✅ Customer profile loaded."
+      setCheckingAuth(
+        false
       );
 
+      // =================================================
+      // LOAD PROFILE
+      // =================================================
+
+      try {
+
+        const user =
+          await getProfileWithRetry(
+            5
+          );
+
+        setProfile(
+          user
+        );
+
+        saveProfile(
+          user
+        );
+
+        console.log(
+          "✅ Customer profile loaded."
+        );
+
+      } catch (profileError) {
+
+        console.warn(
+          "⚠️ Profile could not be loaded immediately.",
+          profileError
+        );
+
+        /*
+         * IMPORTANT:
+         *
+         * Do NOT log out here unless the token
+         * was actually rejected.
+         */
+
+        if (
+          isAuthenticationError(
+            profileError
+          )
+        ) {
+
+          clearLocalSession();
+
+          setProfile(null);
+          setAuthenticated(false);
+
+          return;
+        }
+
+        // =================================================
+        // SERVER TEMPORARILY UNAVAILABLE
+        // =================================================
+
+        const cachedUser =
+          getSavedProfile();
+
+        setProfile(
+          cachedUser ||
+            createFallbackProfile()
+        );
+
+        setAuthenticated(
+          true
+        );
+      }
 
     } catch (error) {
 
@@ -834,18 +759,12 @@ export default function App() {
         error
       );
 
-
-      // ----------------------------------------------
-      // CHECK IF TOKEN EXISTS
-      // ----------------------------------------------
-
       const token =
         getAccessToken();
 
-
-      // OTP login may have succeeded and token may
-      // already be stored, while the profile API is
-      // temporarily unavailable.
+      // =================================================
+      // TOKEN EXISTS AND IS STILL VALID
+      // =================================================
 
       if (
         token &&
@@ -854,51 +773,39 @@ export default function App() {
       ) {
 
         console.warn(
-          "⚠️ Token exists but profile could not load."
+          "⚠️ Login token is valid. Keeping session."
         );
-
 
         const cachedUser =
           getSavedProfile();
 
-
-        if (cachedUser) {
-
-          setProfile(
-            cachedUser
-          );
-
-        }
-
+        setProfile(
+          cachedUser ||
+            createFallbackProfile()
+        );
 
         setAuthenticated(
           true
         );
 
+        setCheckingAuth(
+          false
+        );
 
         return;
-
       }
 
-
-      // Genuine failure.
+      // =================================================
+      // GENUINE LOGIN FAILURE
+      // =================================================
 
       clearLocalSession();
 
-
-      setProfile(
-        null
-      );
-
-
-      setAuthenticated(
-        false
-      );
-
+      setProfile(null);
+      setAuthenticated(false);
+      setCheckingAuth(false);
     }
-
   }
-
 
   // ===================================================
   // LOGOUT
@@ -910,35 +817,26 @@ export default function App() {
       "🔓 Logging out..."
     );
 
-
     clearLocalSession();
 
-
-    setProfile(
-      null
-    );
-
-
-    setAuthenticated(
-      false
-    );
-
+    setProfile(null);
+    setAuthenticated(false);
+    setCheckingAuth(false);
 
     console.log(
       "✅ Local session cleared."
     );
-
   }
 
-
   // ===================================================
-  // CHECKING SESSION
+  // SESSION CHECK
   // ===================================================
 
-  if (checkingAuth) {
+  if (
+    checkingAuth
+  ) {
 
     return (
-
       <div
         className="
           min-h-screen
@@ -975,36 +873,39 @@ export default function App() {
           Restoring session...
         </span>
 
+        <span
+          className="
+            text-[10px]
+            text-slate-600
+          "
+        >
+          Connecting to telemetry backend
+        </span>
+
       </div>
-
     );
-
   }
-
 
   // ===================================================
   // NOT AUTHENTICATED
   // ===================================================
 
-  if (!authenticated) {
+  if (
+    !authenticated
+  ) {
 
     return (
-
       <Login
         onLogin={handleLogin}
       />
-
     );
-
   }
-
 
   // ===================================================
   // AUTHENTICATED
   // ===================================================
 
   return (
-
     <div
       className="
         rorr-app-background
@@ -1025,7 +926,5 @@ export default function App() {
       </div>
 
     </div>
-
   );
-
 }
