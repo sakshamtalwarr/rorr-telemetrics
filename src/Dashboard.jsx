@@ -6,8 +6,12 @@ import {
 import {
   Battery,
   Gauge,
+  Gauge as Speedometer,
   Navigation,
   Thermometer,
+  MapPin,
+  Timer,
+  AlertTriangle as Alert,
 } from "lucide-react";
 
 import Header from "./components/dashboard/Header";
@@ -852,6 +856,7 @@ export default function Dashboard({
         ============================================== */}
 
         <section
+          id="metrics"
           className="
             grid
             grid-cols-1
@@ -966,6 +971,7 @@ export default function Dashboard({
         ============================================== */}
 
         <section
+          id="map"
           className="
             grid
             grid-cols-1
@@ -1149,6 +1155,7 @@ export default function Dashboard({
         ============================================== */}
 
         <section
+          id="stats"
           className="
             grid
             grid-cols-1
@@ -1185,62 +1192,58 @@ export default function Dashboard({
           liveData={liveData}
         />
 
-{alerts.length > 0 && (
-
-          <Alerts
-            alerts={alerts}
-          />
-
-        )}
-            
+        <div id="alerts">
+          {alerts.length > 0 && (
+            <Alerts
+              alerts={alerts}
+            />
+          )}
+        </div>
 
       </main>
+
+      {/* =============================================
+          FLOATING DOCK (MOBILE NAVIGATION)
+      ============================================= */}
+
+      <div className="floating-dock">
+
+          <div className="dock-links">
+
+              <a href="#metrics" className="dock-link">
+                  <div className="icon">
+                      <Speedometer />
+                  </div>
+                  <span className="dock-label">Metrics</span>
+              </a>
+
+              <a href="#map" className="dock-link">
+                  <div className="icon">
+                      <MapPin />
+                  </div>
+                  <span className="dock-label">Map</span>
+              </a>
+
+              <a href="#stats" className="dock-link">
+                  <div className="icon">
+                      <Timer />
+                  </div>
+                  <span className="dock-label">Stats</span>
+              </a>
+
+              <a href="#alerts" className="dock-link">
+                  <div className="icon">
+                      <Alert />
+                  </div>
+                  <span className="dock-label">Alerts</span>
+              </a>
+
+          </div>
+
+      </div>
 
     </div>
 
   );
 
-}
-
-
-        {/* =============================================
-            FLOATING DOCK (MOBILE NAVIGATION)
-        ============================================= */}
-
-        <div className="floating-dock">
-
-            <div className="dock-links">
-
-                <a href="#metrics" className="dock-link">
-                    <div className="icon">
-                        <Speedometer />
-                    </div>
-                    <span className="dock-label">Metrics</span>
-                </a>
-
-                <a href="#map" className="dock-link">
-                    <div className="icon">
-                        <MapPin />
-                    </div>
-                    <span className="dock-label">Map</span>
-                </a>
-
-                <a href="#stats" className="dock-link">
-                    <div className="icon">
-                        <Timer />
-                    </div>
-                    <span className="dock-label">Stats</span>
-                </a>
-
-                <a href="#alerts" className="dock-link">
-                    <div className="icon">
-                        <Alert />
-                    </div>
-                    <span className="dock-label">Alerts</span>
-                </a>
-
-            </div>
-
-        </div>
-      );
 }
