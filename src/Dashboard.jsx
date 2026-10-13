@@ -13,6 +13,8 @@ import {
 import Header from "./components/dashboard/Header";
 import MetricCard from "./components/dashboard/MetricCard";
 import VehicleActivity from "./components/dashboard/VehicleActivity";
+
+import TripHistory from "./components/dashboard/TripHistory";
 import LiveTelemetry from "./components/dashboard/LiveTelemetry";
 import GeofenceController from "./components/dashboard/GeofenceController";
 import LiveMap from "./components/dashboard/LiveMap";
@@ -1173,7 +1175,17 @@ export default function Dashboard({
             ALERTS
         ============================================== */}
 
-        {alerts.length > 0 && (
+        
+
+        {/* =============================================
+            TRIP HISTORY
+        ============================================= */}
+
+        <TripHistory
+          liveData={liveData}
+        />
+
+{alerts.length > 0 && (
 
           <Alerts
             alerts={alerts}
