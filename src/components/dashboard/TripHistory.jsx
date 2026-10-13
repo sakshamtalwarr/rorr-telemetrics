@@ -1,11 +1,7 @@
 import {
-  MapPin,
-  LocationDisabled,
-  Timer,
-  Speedometer,
-  Clock,
-  RefreshCw,
-} from "lucide-react";
+  useEffect,
+  useRef,
+} from "react";
 
 import GlassCard from "../common/GlassCard";
 import ErrorBoundary from "../common/ErrorBoundary";
@@ -52,8 +48,6 @@ export default function TripHistory({
   // LEAFLET MAP SETUP
   // =====================================================
 
-  const routeLineColor = "#818cf8";
-
   const routeCoordinates =
     routeHistory
       .filter(
@@ -72,10 +66,119 @@ export default function TripHistory({
       ? routeCoordinates[0][1]
       : DEFAULT_LNG;
 
-  const mapCenter =
-    routeCoordinates.length > 0
-      ? routeCoordinates[Math.floor(routeCoordinates.length / 2)]
-      : [DEFAULT_LAT, DEFAULT_LNG];
+  const mapContainerRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+    if (mapInstanceRef.current) return;
+
+    const map = L.map(mapContainerRef.current, {
+      center: initialLat ? [initialLat, initialLng] : [DEFAULT_LAT, DEFAULT_LNG],
+      zoom: routeCoordinates.length > 0 ? 14 : 13,
+      zoomControl: true,
+      attributionControl: true,
+    });
+
+    L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+      {
+        attribution: "Tiles © Esri - Sources: Esri, HERE, Garmin, FAO, NOAA, USGS",
+        maxZoom: 19,
+        minZoom: 3,
+      }
+    ).addTo(map);
+
+    if (routeCoordinates.length > 0) {
+      const polyline = L.polyline(routeCoordinates, {
+        color: routePolylineColor,
+        weight: routePolylineWeight,
+        opacity: routePolylineOpacity,
+        className: "route-polyline",
+      }).addTo(map);
+
+      // Start marker
+      L.marker([routeCoordinates[0][0], routeCoordinates[0][1]], {
+        icon: L.divIcon({
+          className: "route-start-marker",
+          html: `
+            <div
+              style="
+                width:32px;
+                height:32px;
+                border-radius:50%;
+                background:rgba(34,197,94,0.2);
+                border:2px solid #22c55e;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                box-shadow:0 0 12px rgba(34,197,94,0.5);
+              "
+            >
+              <span
+                style="
+                  font-size:14px;
+                  line-height:1;
+                  color:#22c55e;
+                ">
+                  ▶
+              </span>
+            </div>
+          `,
+          iconSize: [32, 32],
+          iconAnchor: [16, 16],
+        }),
+      }).addTo(map);
+
+      // Finish marker
+      if (routeCoordinates.length > 1) {
+        const last = routeCoordinates[routeCoordinates.length - 1];
+        L.marker([last[0], last[1]], {
+          icon: L.divIcon({
+            className: "route-finish-marker",
+            html: `
+              <div
+                style="
+                  width:32px;
+                  height:32px;
+                  border-radius:50%;
+                  background:rgba(239,68,68,0.2);
+                  border:2px solid #f87171;
+                  display:flex;
+                  align-items:center;
+                  justify-content:center;
+                "
+              >
+                <span
+                  style="
+                    font-size:14px;
+                    line-height:1;
+                    color:#f87171;
+                  ">
+                    ✓
+                </span>
+              </div>
+            `,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+          }),
+        }).addTo(map);
+      }
+
+      try {
+        map.fitBounds(polyline.getBounds(), { padding: [20, 20] });
+      } catch {
+        // fallback
+      }
+    }
+
+    mapInstanceRef.current = map;
+
+    return () => {
+      map.remove();
+      mapInstanceRef.current = null;
+    };
+  }, [routeCoordinates.length, initialLat, initialLng]);
 
   // =====================================================
   // RENDER
@@ -114,9 +217,10 @@ export default function TripHistory({
                 font-black
                 text-white
                 mt-1
-              >
-                {tripDuration > 0 ? `${tripDuration} min` : "-"}
-              </p>
+              "
+            >
+              {tripDuration > 0 ? `${tripDuration} min` : "-"}
+            </p>
           </div>
 
           <div>
@@ -137,9 +241,10 @@ export default function TripHistory({
                 font-black
                 text-white
                 mt-1
-              >
-                {totalDistance > 0 ? `${totalDistance.toFixed(1)} km` : "-"}
-              </p>
+              "
+            >
+              {totalDistance > 0 ? `${totalDistance.toFixed(1)} km` : "-"}
+            </p>
           </div>
 
           <div>
@@ -160,9 +265,10 @@ export default function TripHistory({
                 font-black
                 text-white
                 mt-1
-              >
-                {maxSpeed > 0 ? `${maxSpeed} km/h` : "-"}
-              </p>
+              "
+            >
+              {maxSpeed > 0 ? `${maxSpeed} km/h` : "-"}
+            </p>
           </div>
 
           <div>
@@ -183,15 +289,13 @@ export default function TripHistory({
                 font-black
                 text-white
                 mt-1
-              >
-                {minSoc}% – {maxSoc}%
-              </p>
+              "
+            >
+              {minSoc}% – {maxSoc}%
+            </p>
           </div>
 
         </div>
-
-
-
 
         {/* =================================================
             ROUTE MAP
@@ -210,7 +314,7 @@ export default function TripHistory({
             <ErrorBoundary>
 
               <div
-                ref={null}
+                ref={mapContainerRef}
                 className="
                   absolute
                   inset-0
@@ -220,174 +324,6 @@ export default function TripHistory({
                   rounded-xl
                 "
               />
-
-              <L.map
-
-                className="absolute inset-0"
-
-                center={initialLat ? [initialLat, initialLng] : [DEFAULT_LAT, DEFAULT_LNG]}
-
-                zoom={routeCoordinates.length > 0 ? 14 : 13}
-
-                zoomControl={true}
-
-                attributionControl={true}
-
-              >
-
-                <L.tileLayer
-
-                  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}"
-
-                  attribution="Tiles © Esri - Sources: Esri, HERE, Garmin, FAO, NOAA, USGS"
-
-                  maxZoom={19}
-
-                  minZoom={3}
-
-                />
-
-                {/* =================================================
-                    ROUTE POLYLINE
-                ================================================= */}
-
-                {routeCoordinates.length > 0 && (
-
-                  <L.polyline
-
-                    routeCoordinates
-
-                    {
-
-                      color: routeLineColor,
-
-                      weight: routePolylineWeight,
-
-                      opacity: routePolylineOpacity,
-
-                      className: "route-polyline"
-
-                    }
-
-                    />
-
-
-                )}
-
-
-                {/* =================================================
-                    BIKE MARKER START
-                ================================================= */}
-
-                {routeCoordinates.length > 0 && (
-
-                  <L.marker
-
-                    [routeCoordinates[0][0], routeCoordinates[0][1]]
-
-                    {
-
-                      icon: L.divIcon({
-
-                        className: "route-start-marker",
-
-                        html: `
-
-                          <div
-                            style="
-                              width:32px;
-                              height:32px;
-                              border-radius:50%;
-                              background:rgba(34,197,94,0.2);
-                              border:2px solid #22c55e;
-                              display:flex;
-                              align-items:center;
-                              justify-content:center;
-                              box-shadow:0 0 12px rgba(34,197,94,0.5);
-                            "
-                          >
-                            <span
-                              style="
-                                font-size:14px;
-                                line-height:1;
-                                color:#22c55e;
-                              ">
-                                ▶
-                            </span>
-                          </div>
-
-                        `,
-
-                        iconSize: [32, 32],
-
-                        iconAnchor: [16, 16],
-
-                      })
-
-                    }
-
-                  />
-
-
-                )}
-
-
-                {/* =================================================
-                    FINISH MARKER
-                ================================================= */}
-
-                {routeCoordinates.length > 1 && (
-
-                  <L.marker
-
-                    [routeCoordinates[routeCoordinates.length - 1][0], routeCoordinates[routeCoordinates.length - 1][1]]
-
-                    {
-
-                      icon: L.divIcon({
-
-                        className: "route-finish-marker",
-
-                        html: `
-
-                          <div
-                            style="
-                              width:32px;
-                              height:32px;
-                              border-radius:50%;
-                              background:rgba(239,68,68,0.2);
-                              border:2px solid #f87171;
-                              display:flex;
-                              align-items:center;
-                              justify-content:center;
-                            "
-                          >
-                            <span
-                              style="
-                                font-size:14px;
-                                line-height:1;
-                                color:#f87171;
-                              ">
-                                ✓
-                            </span>
-                          </div>
-
-                        `,
-
-                        iconSize: [32, 32],
-
-                        iconAnchor: [16, 16],
-
-                      })
-
-                    }
-
-                  />
-
-
-                )}
-
-              </L.map>
 
             </ErrorBoundary>
 
@@ -432,8 +368,9 @@ export default function TripHistory({
                   mt-1
                   text-[9px]
                   text-slate-500
-                >
-                  {session.startedAt ? new Date(session.startedAt).toLocaleTimeString() : "-"}
+                "
+              >
+                {session.startedAt ? new Date(session.startedAt).toLocaleTimeString() : "-"}
               </p>
             </div>
 
@@ -454,8 +391,9 @@ export default function TripHistory({
                   mt-1
                   text-[9px]
                   text-slate-500
-                >
-                  {liveData?.lastUpdate ? new Date(liveData.lastUpdate).toLocaleTimeString() : "-"}
+                "
+              >
+                {liveData?.lastUpdate ? new Date(liveData.lastUpdate).toLocaleTimeString() : "-"}
               </p>
             </div>
 
@@ -476,8 +414,9 @@ export default function TripHistory({
                   mt-1
                   text-[9px]
                   text-slate-500
-                >
-                  {history.length}
+                "
+              >
+                {history.length}
               </p>
             </div>
 
@@ -498,8 +437,9 @@ export default function TripHistory({
                   mt-1
                   text-[9px]
                   text-slate-500
-                >
-                  {maxSpeed > 0 ? `${(maxSpeed * 0.85).toFixed(0)} km/h` : "-"}
+                "
+              >
+                {maxSpeed > 0 ? `${(maxSpeed * 0.85).toFixed(0)} km/h` : "-"}
               </p>
             </div>
 
