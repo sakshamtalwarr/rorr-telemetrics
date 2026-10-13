@@ -405,6 +405,13 @@ export default function App() {
       // =================================================
       // CHECK LOCAL JWT EXPIRY
       // =================================================
+      //
+      // Note: Instead of immediately clearing the session on token expiry,
+      // we proceed to try fetching the profile. The getProfile() function
+      // now has built-in token refresh logic that will attempt to get a new
+      // token if the current one is expired or near expiry. This provides a
+      // smoother experience where the user may be re-authenticated silently.
+      // Session is only cleared if profile fetch ultimately fails.
 
       if (
         isTokenExpired(token)
@@ -418,15 +425,10 @@ export default function App() {
           expiry
         );
 
-        clearLocalSession();
+        // Session refresh handled by getProfile() - do not clear session here.
+        // If token can be refreshed, user stays logged in.
+        // If refresh fails, session will be cleared in the catch block.
 
-        if (!cancelled) {
-          setProfile(null);
-          setAuthenticated(false);
-          setCheckingAuth(false);
-        }
-
-        return;
       }
 
       // =================================================

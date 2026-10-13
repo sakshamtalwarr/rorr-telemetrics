@@ -105,6 +105,28 @@ export async function verifyOtp(
       response.data?.data?.accessToken ||
       response.data?.token;
 
+    // =================================================
+    // EXTRACT AND STORE REFRESH TOKEN (if provided)
+    // =================================================
+    //
+    // OBEN may return a refreshToken along with the access token.
+    // Storing it here enables automatic token refresh when the
+    // access token expires, so the user is never logged out.
+    //
+    const refreshToken =
+      response.data?.refreshToken ||
+      response.data?.data?.refreshToken;
+
+    if (refreshToken) {
+      localStorage.setItem(
+        "oben_refresh_token",
+        refreshToken
+      );
+      console.log(
+        "🔄 Refresh token stored automatically."
+      );
+    }
+
     if (
       !response.data?.success ||
       !token
@@ -157,9 +179,141 @@ export async function verifyOtp(
 // =====================================================
 
 export function getAccessToken() {
-  return localStorage.getItem(
-    ACCESS_TOKEN_KEY
-  );
+  return localStorage.getItem(ACCESS_TOKEN_KEY);
+}
+
+// =====================================================
+// REFRESH ACCESS TOKEN
+// =====================================================
+
+export async function refreshAccessToken() {
+  try {
+    const token = getAccessToken();
+    if (!token) return null;
+
+    // Decode payload to check expiry
+    const payload =
+      getTokenPayload(token);
+
+    if (
+      !payload ||
+      !payload.exp
+    ) {
+      return null;
+    }
+
+    const currentTime =
+      Math.floor(Date.now() / 1000);
+
+    // If token is not yet expired, no need to refresh
+    if (currentTime < payload.exp - 60) {
+      // Token valid for more than 60 seconds, keep it
+      return token;
+    }
+
+    // Token is near expiry or expired, attempt refresh
+    console.log(
+      "🔄 Token near expiry, attempting refresh..."
+    );
+
+    // First, try using the refresh token stored during login
+    // (this is set automatically when verifyOtp() runs)
+    let refreshToken =
+      localStorage.getItem("oben_refresh_token");
+
+    // Fallback: use .env value if no stored token available
+    if (!refreshToken) {
+      refreshToken =
+        process.env.OBEN_REFRESH_TOKEN;
+    }
+
+    if (!refreshToken) {
+      console.warn(
+        "⚠️ No refresh token available (neither stored nor in .env), keeping current token"
+      );
+      return token;
+    }
+
+    const API_BASE =
+      import.meta.env.VITE_API_URL ||
+      "http://localhost:5000";
+    const refreshUrl = `${API_BASE}/api/auth/refresh`;
+
+    const response = await fetch(
+      refreshUrl,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          refreshToken,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      console.warn(
+        "⚠️ Refresh token request failed, keeping current token"
+      );
+      return token;
+    }
+
+    const data = await response.json();
+
+    if (data?.accessToken) {
+      // Save new token
+      localStorage.setItem(
+        ACCESS_TOKEN_KEY,
+        data.accessToken
+      );
+      console.log(
+        "✅ Token refreshed successfully."
+      );
+      return data.accessToken;
+    }
+
+    console.warn(
+      "⚠️ Refresh response missing accessToken",
+      data
+    );
+    return token;
+
+  } catch (error) {
+    console.error(
+      "❌ Token refresh failed:",
+      error.message
+    );
+    return null;
+  }
+}
+
+// Helper: decode JWT payload
+function getTokenPayload(token) {
+  try {
+    if (!token) return null;
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const base64Url = parts[1];
+    const base64 =
+      base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const json = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((character) => {
+          const hex =
+            character
+              .charCodeAt(0)
+              .toString(16)
+              .padStart(2, "0");
+          return `%${hex}`;
+        })
+        .join("")
+    );
+    return JSON.parse(json);
+  } catch (error) {
+    return null;
+  }
 }
 
 // =====================================================
@@ -353,80 +507,108 @@ function extractProfile(responseData) {
 // =====================================================
 
 export async function getProfile() {
-  const token =
-    getAccessToken();
+  const token = getAccessToken();
 
   if (!token) {
-    console.warn(
-      "⚠️ No access token available."
-    );
+    console.warn("⚠️ No access token available.");
 
     return null;
   }
 
   try {
-    console.log(
-      "👤 Requesting customer profile..."
-    );
+    console.log("👤 Requesting customer profile...");
 
-    const response =
-      await axios.get(
-        `${API_URL}/profile`,
-        {
+    // =================================================
+    // ATTEMPT PROFILE FETCH WITH TOKEN REFRESH
+    // =================================================
+
+    let currentToken = token;
+
+    // Try up to 2 times: original + 1 refresh
+    for (let attempt = 0; attempt < 2; attempt++) {
+
+      // Refresh token if this is the second attempt
+      if (attempt === 1) {
+
+        // Attempt silent refresh
+        const refreshedToken = await refreshAccessToken();
+
+        if (refreshedToken && refreshedToken !== token) {
+          currentToken = refreshedToken;
+          console.log("🔄 Token refreshed, retrying profile request.");
+        } else if (refreshedToken === token) {
+          console.log("ℹ️ Token refresh returned same token, proceeding.");
+        } else {
+          console.warn("⚠️ Token refresh failed, proceeding with current token.");
+        }
+
+      }
+
+      try {
+        const response = await axios.get(`${API_URL}/profile`, {
+
           headers: {
-            Authorization:
-              `Bearer ${token}`,
+            Authorization: `Bearer ${currentToken}`,
 
-            Accept:
-              "application/json",
+            Accept: "application/json",
           },
 
           // Give Render enough time to wake.
           timeout: 30000,
+        });
+
+        console.log("📦 Full profile response:", response.data);
+
+        const profile = extractProfile(response.data);
+
+        if (!profile) {
+          throw new Error(
+            "Profile was returned, but the user data could not be found."
+          );
         }
-      );
 
-    console.log(
-      "📦 Full profile response:",
-      response.data
-    );
+        console.log("👤 Extracted profile:", profile);
 
-    const profile =
-      extractProfile(
-        response.data
-      );
+        // =================================================
+        // CACHE PROFILE
+        // =================================================
 
-    if (!profile) {
-      throw new Error(
-        "Profile was returned, but the user data could not be found."
-      );
-    }
+        saveProfile(profile);
 
-    console.log(
-      "👤 Extracted profile:",
-      profile
-    );
+        return profile;
 
-    // =================================================
-    // CACHE PROFILE
-    // =================================================
+      } catch (innerError) {
 
-    saveProfile(
-      profile
-    );
+        const status = innerError?.response?.status;
 
-    return profile;
+        console.error(
+          "❌ Profile request failed:",
+          status || innerError?.code || innerError?.message
+        );
+
+        // If we just refreshed and still got 401, give up
+        if (attempt === 1) {
+          throw innerError;
+        }
+
+        // Otherwise, continue loop to try again with refreshed token
+        console.log("🔁 Retrying profile request with refreshed token...");
+
+        // Small delay before retry
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+      }
+
+    } // end for loop
+
+    // Should not reach here, but throw just in case
+    throw new Error("Profile request failed after retries.");
 
   } catch (error) {
 
-    const status =
-      error?.response?.status;
-
     console.error(
       "❌ Profile request failed:",
-      status ||
-        error?.code ||
-        error?.message
+      error.response?.status || error?.code || error?.message
     );
 
     // =================================================
@@ -442,6 +624,7 @@ export async function getProfile() {
     // =================================================
 
     throw error;
+
   }
 }
 

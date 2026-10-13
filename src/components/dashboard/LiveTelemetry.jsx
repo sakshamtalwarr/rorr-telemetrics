@@ -10,6 +10,7 @@ import {
   Zap,
 } from "lucide-react";
 
+
 import GlassCard from "../common/GlassCard";
 
 
@@ -47,108 +48,98 @@ function formatDate(value) {
 }
 
 
+function getFaultClass(hasError, hasSensorFault) {
+  if (hasError || hasSensorFault) {
+    return hasError ? "text-red-400" : "text-emerald-400";
+  }
+  return "text-slate-400";
+}
+
+
 function State({
   label,
   value,
-  ok = true,
-  warning = false,
+  ok,
+  warning,
 }) {
+  // Determine style objects
+  const labelClasses = {
+    ok: "text-slate-500",
+    warning: "text-slate-400 bg-amber-500",
+    error: "text-slate-400 bg-red-500",
+  }[warning ? "warning" : ok ? "ok" : "error"];
+
+  const statusClasses = {
+    ok: "bg-emerald-500 border-white/5",
+    warning: "bg-amber-500 border-white/5",
+    error: "bg-red-500 border-red-500/20",
+  }[warning ? "warning" : ok ? "ok" : "error"];
+
   return (
+
     <div
       className="
         rounded-xl
         border border-white/5
         bg-black/25
-        px-3 py-2.5
+        p-3
       "
     >
+
       <div
         className="
           flex items-center gap-2
-          text-[7px]
+          text-xs
           font-bold
           uppercase
-          tracking-widest
-          text-slate-600
+          tracking-wider
         "
       >
-        <span
-          className={`
-            h-1.5 w-1.5 rounded-full
-            ${
-              warning
-                ? "bg-amber-400"
-                : ok
-                  ? "bg-emerald-400"
-                  : "bg-red-400"
-            }
-          `}
-        />
+        <span className={statusClasses} />
 
         {label}
       </div>
 
-      <div
-        className={`
-          mt-1.5
-          text-[10px]
-          font-bold
-          ${
-            warning
-              ? "text-amber-400"
-              : ok
-                ? "text-emerald-400"
-                : "text-red-400"
-          }
-        `}
-      >
+      <div className="mt-1 text-sm font-bold">
         {value}
       </div>
+
     </div>
   );
 }
 
 
-function InfoRow({
+function MiniStat({
   label,
   value,
 }) {
+
   return (
-    <div
-      className="
-        flex items-center
-        justify-between
-        gap-4
-        border-b border-white/[0.03]
-        py-2
-        last:border-0
-      "
-    >
-      <span
+
+    <>
+      <div
         className="
-          text-[8px]
+          text-xs
           font-bold
           uppercase
-          tracking-widest
-          text-slate-600
+          tracking-wider
+          text-slate-400
         "
       >
         {label}
-      </span>
+      </div>
 
-      <span
+      <div
         className="
-          max-w-[65%]
-          truncate
-          text-right
-          text-[9px]
-          font-mono
+          mt-1
+          text-xs
+          font-medium
           text-slate-300
         "
       >
-        {value || "--"}
-      </span>
-    </div>
+        {value}
+      </div>
+    </>
   );
 }
 
@@ -161,11 +152,9 @@ export default function LiveTelemetry({
   const isActive =
     connectionStatus === "Telemetry Active";
 
-
   const hasError =
     liveData?.error &&
     liveData.error !== "No error";
-
 
   const hasSensorFault =
     liveData?.gasSensorFault ||
@@ -175,16 +164,22 @@ export default function LiveTelemetry({
   const session =
     liveData?.session || {};
 
-
   const latency =
     liveData?.telemetryLatency;
 
 
+  // Pre-compute fault class
+  const faultClass = getFaultClass(hasError, hasSensorFault);
+
+
   return (
+
     <GlassCard
-      className="p-5"
+      className="p-6"
       hover={false}
     >
+
+
 
       {/* =================================================
           HEADER
@@ -193,7 +188,7 @@ export default function LiveTelemetry({
       <div
         className="
           flex flex-col
-          gap-3
+          gap-4
           border-b border-white/5
           pb-4
           md:flex-row
@@ -202,22 +197,13 @@ export default function LiveTelemetry({
         "
       >
 
+
+
         <div className="flex items-center gap-3">
 
-          <div
-            className="
-              rounded-lg
-              bg-indigo-500/10
-              p-2
-            "
-          >
-            <Radio
-              className="
-                h-4 w-4
-                text-indigo-400
-              "
-            />
-          </div>
+          <Radio
+            className="h-4 w-4 text-indigo-400"
+          />
 
           <div>
             <h3
@@ -233,13 +219,7 @@ export default function LiveTelemetry({
             </h3>
 
             <p
-              className="
-                mt-0.5
-                text-[8px]
-                font-mono
-                tracking-widest
-                text-slate-600
-              "
+              className="mt-0.5 text-[8px] font-mono tracking-widest text-slate-600"
             >
               LIVE TELEMATICS SYSTEM STATE
             </p>
@@ -249,35 +229,17 @@ export default function LiveTelemetry({
 
 
         <div
-          className="
-            flex items-center gap-2
-            rounded-full
-            border border-white/5
-            bg-black/30
-            px-3 py-1.5
-          "
+          className="flex items-center gap-2 rounded-full bg-black/30 border border-white/5 px-3 py-1.5"
         >
 
+
+
           <span
-            className={`
-              h-1.5 w-1.5
-              rounded-full
-              ${
-                isActive
-                  ? "animate-pulse bg-emerald-400"
-                  : "bg-amber-400"
-              }
-            `}
+            className="h-1.5 w-1.5 rounded-full animate-pulse bg-emerald-500"
           />
 
           <span
-            className="
-              text-[8px]
-              font-bold
-              uppercase
-              tracking-widest
-              text-slate-400
-            "
+            className="text-[8px] font-bold uppercase tracking-widest text-slate-400"
           >
             {connectionStatus}
           </span>
@@ -291,25 +253,27 @@ export default function LiveTelemetry({
           VEHICLE STATE
       ================================================= */}
 
-      <section className="mt-5">
+      <section className="mt-6">
 
-        <SectionTitle
-          icon={Activity}
-          title="Vehicle State"
-        />
-
-        <div
+        <h4
           className="
-            mt-3
-            grid
-            grid-cols-2
-            gap-2
-            sm:grid-cols-4
+            text-sm
+            font-bold
+            uppercase
+            tracking-widest
+            text-slate-400
+            mb-3
+            border-b border-white/5
+            pb-2
           "
         >
+          Vehicle State
+        </h4>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
 
           <State
-            label="Operating Mode"
+            label="Mode"
             value={liveData?.mode || "UNKNOWN"}
             ok
           />
@@ -322,7 +286,6 @@ export default function LiveTelemetry({
                 : "OFF"
             }
             ok={!liveData?.ignition}
-            warning={liveData?.ignition}
           />
 
           <State
@@ -333,7 +296,6 @@ export default function LiveTelemetry({
                 : "DISCONNECTED"
             }
             ok={!liveData?.chargerConnected}
-            warning={liveData?.chargerConnected}
           />
 
           <State
@@ -344,7 +306,6 @@ export default function LiveTelemetry({
                 : "UP"
             }
             ok={!liveData?.sideStandStatus}
-            warning={liveData?.sideStandStatus}
           />
 
           <State
@@ -355,7 +316,6 @@ export default function LiveTelemetry({
                 : "NORMAL"
             }
             ok={!liveData?.killSwitchStatus}
-            warning={liveData?.killSwitchStatus}
           />
 
           <State
@@ -366,7 +326,6 @@ export default function LiveTelemetry({
                 : "OFF"
             }
             ok={!liveData?.safeMode}
-            warning={liveData?.safeMode}
           />
 
           <State
@@ -377,7 +336,6 @@ export default function LiveTelemetry({
                 : "OFF"
             }
             ok={!liveData?.immobilize}
-            warning={liveData?.immobilize}
           />
 
           <State
@@ -401,20 +359,22 @@ export default function LiveTelemetry({
 
       <section className="mt-6">
 
-        <SectionTitle
-          icon={Zap}
-          title="Electrical & Sensor Status"
-        />
-
-        <div
+        <h4
           className="
-            mt-3
-            grid
-            grid-cols-2
-            gap-2
-            sm:grid-cols-4
+            text-sm
+            font-bold
+            uppercase
+            tracking-widest
+            text-slate-400
+            mb-3
+            border-b border-white/5
+            pb-2
           "
         >
+          Electrical & Sensor Status
+        </h4>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
 
           <State
             label="Charge Contactor"
@@ -467,167 +427,70 @@ export default function LiveTelemetry({
 
       <section className="mt-6">
 
-        <SectionTitle
-          icon={
-            hasError
-              ? Shield
-              : Cpu
-          }
-          title="System Health"
-        />
-
         <div
           className="
-            mt-3
-            grid
-            grid-cols-1
-            gap-3
-            lg:grid-cols-2
+            rounded-xl
+            border border-white/5
+            bg-black/20
+            p-4
+            mb-4
           "
         >
 
-          {/* ERROR */}
+          <div className="flex items-center gap-2">
 
-          <div
-            className={`
-              rounded-xl
-              border
-              p-4
-              ${
-                hasError || hasSensorFault
-                  ? "border-red-500/30 bg-red-500/[0.05]"
-                  : "border-emerald-500/20 bg-emerald-500/[0.04]"
-              }
-            `}
+            <Shield
+              className="h-3.5 w-3.5 text-red-400"
+            />
+
+            <span
+              className="text-xs font-bold uppercase tracking-widest text-slate-400"
+            >
+              System Faults
+            </span>
+
+          </div>
+
+          <p
+            className={faultClass}
           >
-
-            <div
-              className="
-                flex items-center gap-2
-              "
-            >
-
-              <Shield
-                className={`
-                  h-4 w-4
-                  ${
-                    hasError || hasSensorFault
-                      ? "text-red-400"
-                      : "text-emerald-400"
-                  }
-                `}
-              />
-
-              <span
-                className="
-                  text-[9px]
-                  font-bold
-                  uppercase
-                  tracking-widest
-                  text-slate-400
-                "
-              >
-                System Faults
-              </span>
-
-            </div>
-
-            <p
-              className={`
-                mt-2
-                text-xs
-                font-bold
-                ${
-                  hasError || hasSensorFault
-                    ? "text-red-400"
-                    : "text-emerald-400"
-                }
-              `}
-            >
-              {hasError
+            ${
+              hasError
                 ? liveData.error
                 : hasSensorFault
                   ? "Sensor fault detected"
-                  : "No active faults"}
-            </p>
+                  : "No active faults"
+            }
+          </p>
 
-          </div>
+        </div>
 
+        {/* SESSION */}
 
-          {/* SESSION */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
 
-          <div
-            className="
-              rounded-xl
-              border border-white/5
-              bg-black/20
-              p-4
-            "
-          >
+          <MiniStat
+            label="MAX SPEED"
+            value={
+              `${Number(
+                session.maxSpeed || 0
+              ).toFixed(0)} km/h`
+            }
+          />
 
-            <div
-              className="
-                flex items-center gap-2
-              "
-            >
+          <MiniStat
+            label="DISTANCE"
+            value={
+              `${Number(
+                session.distanceTravelled || 0
+              ).toFixed(1)} km`
+            }
+          />
 
-              <Gauge
-                className="
-                  h-4 w-4
-                  text-indigo-400
-                "
-              />
-
-              <span
-                className="
-                  text-[9px]
-                  font-bold
-                  uppercase
-                  tracking-widest
-                  text-slate-400
-                "
-              >
-                Current Session
-              </span>
-
-            </div>
-
-            <div
-              className="
-                mt-3
-                grid grid-cols-3
-                gap-3
-              "
-            >
-
-              <MiniStat
-                label="MAX SPEED"
-                value={
-                  `${Number(
-                    session.maxSpeed || 0
-                  ).toFixed(0)} km/h`
-                }
-              />
-
-              <MiniStat
-                label="DISTANCE"
-                value={
-                  `${Number(
-                    session.distanceTravelled || 0
-                  ).toFixed(1)} km`
-                }
-              />
-
-              <MiniStat
-                label="PACKETS"
-                value={
-                  session.telemetryPackets || 0
-                }
-              />
-
-            </div>
-
-          </div>
+          <MiniStat
+            label="PACKETS"
+            value={session.telemetryPackets || 0}
+          />
 
         </div>
 
@@ -640,63 +503,93 @@ export default function LiveTelemetry({
 
       <section className="mt-6">
 
-        <SectionTitle
-          icon={Timer}
-          title="Telemetry Pipeline"
-        />
-
-        <div
+        <h4
           className="
-            mt-3
-            grid
-            grid-cols-1
-            gap-2
-            md:grid-cols-3
+            text-sm
+            font-bold
+            uppercase
+            tracking-widest
+            text-slate-400
+            mb-3
+            border-b border-white/5
+            pb-2
           "
         >
+          Telemetry Pipeline
+        </h4>
 
-          <PipelineItem
-            label="PACKET CREATED"
-            value={
-              formatTime(
-                liveData?.packetCreatedAt
-              )
-            }
-            sub={
-              formatDate(
-                liveData?.packetCreatedAt
-              )
-            }
-          />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
 
-          <PipelineItem
-            label="FLINK RECEIVED"
-            value={
-              formatTime(
-                liveData?.flinkReceivedAt
-              )
-            }
-            sub={
-              formatDate(
-                liveData?.flinkReceivedAt
-              )
-            }
-          />
+          <div
+            className="rounded-xl border border-white/5 bg-black/20 p-3"
+          >
 
-          <PipelineItem
-            label="MONGO RECEIVED"
-            value={
-              formatTime(
-                liveData?.mongoReceivedAt
-              )
-            }
-            sub={
-              latency === null ||
-              latency === undefined
-                ? "Latency unavailable"
-                : `${latency} ms pipeline delay`
-            }
-          />
+
+
+            <div className="flex items-center gap-2">
+              <Radio className="h-3 w-3 text-indigo-400" />
+              <span
+                className="text-xs text-slate-400 font-bold uppercase tracking-widest"
+              >
+                PACKET CREATED
+              </span>
+            </div>
+
+            <div className="mt-1 text-xs text-slate-500">
+              {formatTime(liveData?.packetCreatedAt)} -
+              {formatDate(liveData?.packetCreatedAt)}
+            </div>
+
+          </div>
+
+          <div
+            className="rounded-xl border border-white/5 bg-black/20 p-3"
+          >
+
+
+
+            <div className="flex items-center gap-2">
+              <Radio className="h-3 w-3 text-indigo-400" />
+              <span
+                className="text-xs text-slate-400 font-bold uppercase tracking-widest"
+              >
+                FLINK RECEIVED
+              </span>
+            </div>
+
+            <div className="mt-1 text-xs text-slate-500">
+              {formatTime(liveData?.flinkReceivedAt)} -
+              {formatDate(liveData?.flinkReceivedAt)}
+            </div>
+
+          </div>
+
+          <div
+            className="rounded-xl border border-white/5 bg-black/20 p-3"
+          >
+
+
+
+            <div className="flex items-center gap-2">
+              <Shield className="h-3 w-3 text-indigo-400" />
+              <span
+                className="text-xs text-slate-400 font-bold uppercase tracking-widest"
+              >
+                PIPELINE LATENCY
+              </span>
+            </div>
+
+            {latency !== null && latency !== undefined ? (
+              <div className="mt-1 text-xs text-slate-500">
+                {latency} ms pipeline delay
+              </div>
+            ) : (
+              <div className="mt-1 text-xs text-slate-500">
+                Latency unavailable
+              </div>
+            )}
+
+          </div>
 
         </div>
 
@@ -709,81 +602,57 @@ export default function LiveTelemetry({
 
       <section className="mt-6">
 
-        <SectionTitle
-          icon={Cpu}
-          title="Vehicle Information"
-        />
-
-        <div
+        <h4
           className="
-            mt-3
-            grid
-            grid-cols-1
-            gap-x-6
-            rounded-xl
-            border border-white/5
-            bg-black/20
-            px-4
-            sm:grid-cols-2
-            lg:grid-cols-4
+            text-sm
+            font-bold
+            uppercase
+            tracking-widest
+            text-slate-400
+            mb-3
+            border-b border-white/5
+            pb-2
           "
         >
+          Vehicle Information
+        </h4>
 
-          <InfoRow
-            label="VIN"
-            value={liveData?.VIN}
-          />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-          <InfoRow
-            label="IMEI"
-            value={liveData?.IMEI}
-          />
+          <div className="space-y-3">
 
-          <InfoRow
-            label="VCUID"
-            value={liveData?.VCUID}
-          />
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wider">VIN</p>
+              <p className="text-lg font-medium text-white">{liveData?.VIN || "—"}</p>
+            </div>
 
-          <InfoRow
-            label="VCU Firmware"
-            value={
-              liveData?.vcuFirmwareVersion
-            }
-          />
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wider">IMEI</p>
+              <p className="text-lg font-medium text-white">{liveData?.IMEI || "—"}</p>
+            </div>
 
-          <InfoRow
-            label="Odometer"
-            value={
-              `${liveData?.odometer ?? 0} km`
-            }
-          />
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wider">VCUID</p>
+              <p className="text-lg font-medium text-white">{liveData?.VCUID || "—"}</p>
+            </div>
 
-          <InfoRow
-            label="Latitude"
-            value={
-              liveData?.latitude
-                ? liveData.latitude.toFixed(6)
-                : "--"
-            }
-          />
+          </div>
 
-          <InfoRow
-            label="Longitude"
-            value={
-              liveData?.longitude
-                ? liveData.longitude.toFixed(6)
-                : "--"
-            }
-          />
+          <div className="space-y-3">
 
-          <InfoRow
-            label="Last Update"
-            value={
-              formatTime(
-                liveData?.lastUpdate
-              )
-            }
-          />
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wider">VCU Firmware</p>
+              <p className="text-lg font-medium text-white">{liveData?.vcuFirmwareVersion || "—"}</p>
+            </div>
+
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wider">Odometer</p>
+              <p className="text-lg font-medium text-white">
+                {liveData?.odometer ?? 0} km
+              </p>
+            </div>
+
+          </div>
 
         </div>
 
@@ -795,178 +664,26 @@ export default function LiveTelemetry({
       ================================================= */}
 
       <div
-        className="
-          mt-5
-          flex
-          items-center
-          justify-between
-          border-t border-white/5
-          pt-4
-        "
+        className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between"
       >
 
+
+
         <span
-          className="
-            text-[7px]
-            font-mono
-            uppercase
-            tracking-widest
-            text-slate-700
-          "
+          className="text-xs font-mono uppercase tracking-widest text-slate-500"
         >
           RORR TELEMATICS
         </span>
 
         <span
-          className="
-            text-[7px]
-            font-mono
-            text-slate-700
-          "
+          className="text-xs font-mono text-slate-500"
         >
-          LAST TELEMETRY:{" "}
-          {formatTime(
-            liveData?.lastUpdate
-          )}
+          LAST UPDATE:{" "}
+          {formatTime(liveData?.lastUpdate)}
         </span>
 
       </div>
 
     </GlassCard>
-  );
-}
-
-
-// =====================================================
-// SECTION TITLE
-// =====================================================
-
-function SectionTitle({
-  icon: Icon,
-  title,
-}) {
-  return (
-    <div
-      className="
-        flex items-center gap-2
-      "
-    >
-
-      <Icon
-        className="
-          h-3.5 w-3.5
-          text-indigo-400
-        "
-      />
-
-      <span
-        className="
-          text-[9px]
-          font-bold
-          uppercase
-          tracking-widest
-          text-slate-400
-        "
-      >
-        {title}
-      </span>
-
-    </div>
-  );
-}
-
-
-// =====================================================
-// PIPELINE ITEM
-// =====================================================
-
-function PipelineItem({
-  label,
-  value,
-  sub,
-}) {
-  return (
-    <div
-      className="
-        rounded-xl
-        border border-white/5
-        bg-black/20
-        px-4 py-3
-      "
-    >
-
-      <div
-        className="
-          text-[7px]
-          font-bold
-          uppercase
-          tracking-widest
-          text-slate-600
-        "
-      >
-        {label}
-      </div>
-
-      <div
-        className="
-          mt-1.5
-          text-sm
-          font-black
-          text-slate-300
-        "
-      >
-        {value}
-      </div>
-
-      <div
-        className="
-          mt-0.5
-          text-[7px]
-          font-mono
-          text-slate-600
-        "
-      >
-        {sub}
-      </div>
-
-    </div>
-  );
-}
-
-
-// =====================================================
-// MINI STAT
-// =====================================================
-
-function MiniStat({
-  label,
-  value,
-}) {
-  return (
-    <div>
-
-      <div
-        className="
-          text-[7px]
-          font-bold
-          tracking-widest
-          text-slate-700
-        "
-      >
-        {label}
-      </div>
-
-      <div
-        className="
-          mt-1
-          text-xs
-          font-black
-          text-slate-300
-        "
-      >
-        {value}
-      </div>
-
-    </div>
   );
 }

@@ -1,5 +1,6 @@
 import GlassCard from "../common/GlassCard";
 
+
 export default function MetricCard({
   title,
   value,
@@ -11,52 +12,61 @@ export default function MetricCard({
 }) {
 
   return (
+
     <GlassCard
       className={`
         p-6
         flex flex-col
         justify-between
         h-[140px]
+        rounded-xl
+        border border-white/5
+        bg-black/30
+        backdrop-blur-sm
         ${className}
       `}
     >
 
-      <div className="
-        flex
-        justify-between
-        items-start
-      ">
 
-        <p className="
-          text-xs
-          text-slate-400
-          uppercase
-          font-bold
-          tracking-widest
-        ">
+
+      <div className="flex justify-between items-start">
+
+        <p
+          className="
+            text-xs
+            text-slate-400
+            uppercase
+            font-bold
+            tracking-widest
+            mb-2
+          "
+        >
           {title}
         </p>
 
         {Icon && (
           <Icon
-            className={`
+            className="
               w-5 h-5
               ${iconClass}
-            `}
+              margin-bottom: -4px;
+            "
           />
         )}
 
       </div>
 
-
       <div>
 
-        <p className="
-          text-4xl
-          font-black
-          mt-1
-          text-white
-        ">
+        <p
+          className="
+            text-4xl
+            font-black
+            mt-1
+            text-white
+            line-clamp-1
+          "
+        >
           {value}
 
           {unit && (
@@ -69,6 +79,7 @@ export default function MetricCard({
               {unit}
             </span>
           )}
+
         </p>
 
         {children}
