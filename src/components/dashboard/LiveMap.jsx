@@ -1366,7 +1366,7 @@ if (
           relative
           flex
           flex-col
-          h-[500px]
+          h-full md:h-[600px]
           bg-[#0b0f14]
           rounded-2xl
           overflow-hidden

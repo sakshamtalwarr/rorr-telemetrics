@@ -119,7 +119,7 @@ export default function SignalTrace({
         p-6
         flex
         flex-col
-        h-[450px]
+        h-auto min-h-[100px]
       "
       hover={false}
     >

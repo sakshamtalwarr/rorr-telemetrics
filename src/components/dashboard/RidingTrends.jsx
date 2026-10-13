@@ -471,7 +471,7 @@ export default function RidingTrends() {
     <GlassCard
       className="
         flex
-        min-h-[620px]
+        min-h-[200px]
         flex-col
         p-5
       "
@@ -636,7 +636,7 @@ export default function RidingTrends() {
       <div
         className="
           relative
-          h-[290px]
+          h-auto
           w-full
         "
       >
@@ -874,7 +874,7 @@ export default function RidingTrends() {
 
           <div
             className="
-              max-h-[190px]
+              max-h-[none]
               overflow-y-auto
             "
           >

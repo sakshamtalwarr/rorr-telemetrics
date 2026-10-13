@@ -13,7 +13,7 @@ export default function TripLogs({
         p-6
         flex
         flex-col
-        h-[350px]
+        h-auto min-h-[100px]
         overflow-hidden
       "
     >
