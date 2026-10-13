@@ -943,6 +943,197 @@ textarea {
    REDUCED MOTION ACCESSIBILITY
    ===================================================== */
 
+
+
+/* =====================================================
+   MOBILE-FIRST RESPONSIVE UTILITIES
+   ===================================================== */
+
+@media (max-width: 640px) {
+
+    .mob-full-width {
+        width: 100% !important;
+    }
+
+    .mob-text-center {
+        text-align: center !important;
+    }
+
+    .mob-block {
+        display: block !important;
+    }
+
+    .mob-inline-block {
+        display: inline-block !important;
+    }
+
+    .mob-flex-col {
+        flex-direction: column !important;
+    }
+
+    .mob-flex-row {
+        flex-direction: row !important;
+    }
+
+    .mob-gap-4 {
+        gap: 1rem !important;
+    }
+
+    .mob-padding-y-8 {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+    }
+
+}
+
+/* =====================================================
+   TOUCH-FRIENDLY ADJUSTMENTS
+   ===================================================== */
+
+@media (max-width: 640px) {
+
+    .touch-target {
+
+        min-height: 44px !important;
+
+        min-width: 44px !important;
+
+    }
+
+}
+
+/* =====================================================
+   ENHANCED PIXEL FLOW BACKGROUND
+   ===================================================== */
+
+.ppf-canvas {
+
+    position: fixed;
+
+    top: 0;
+
+    left: 0;
+
+    width: 100%;
+
+    height: 100%;
+
+    z-index: 0;
+
+    pointer-events: none;
+
+}
+
+/* =====================================================
+   DARK MODE SUPPORT
+   ===================================================== */
+
+@media (prefers-color-scheme: dark) {
+
+    html {
+
+        background: #0a0a0f !important;
+
+    }
+
+    body {
+
+        background: #0a0a0f !important;
+
+        color: #e8eaed !important;
+
+    }
+
+    .dark-bg {
+
+        background: #0f0f1a !important;
+
+    }
+
+    .card-dark {
+
+        background: rgba(15, 15, 25, 0.8) !important;
+
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+
+    }
+
+    .text-dark {
+
+        color: #d0d5dd !important;
+
+    }
+
+    .border-dark {
+
+        border-color: rgba(255, 255, 255, 0.08) !important;
+
+    }
+
+}
+
+/* =====================================================
+   LIGHT MODE OVERRIDE
+   ===================================================== */
+
+@media (prefers-color-scheme: light) {
+
+    html {
+
+        background: #f8fafc !important;
+
+    }
+
+    body {
+
+        background: #f8fafc !important;
+
+        color: #0f172a !important;
+
+    }
+
+}
+
+/* =====================================================
+   REDUCED MOTION ACCESSIBILITY
+   ===================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+    * {
+
+        animation-duration: 0.01ms !important;
+
+        animation-iteration-count: 1 !important;
+
+        transition-duration: 0.01ms !important;
+
+    }
+
+}
+
+/* =====================================================
+   PRINT STYLES
+   ===================================================== */
+
+@media print {
+
+    .no-print {
+
+        display: none !important;
+
+    }
+
+    body {
+
+        background: #fff !important;
+
+        color: #000 !important;
+
+    }
+
+}
+
 @media (prefers-reduced-motion: reduce) {
 
     *,

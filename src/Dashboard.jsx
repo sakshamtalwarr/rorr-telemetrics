@@ -852,10 +852,12 @@ export default function Dashboard({
         <section
           className="
             grid
-            grid-cols-2
-            lg:grid-cols-5
-            gap-4
-            md:gap-6
+            grid-cols-1
+            sm:grid-cols-2
+            lg:grid-cols-2
+            gap-2
+            md:gap-4
+            pb-4
           "
         >
 
@@ -965,8 +967,9 @@ export default function Dashboard({
           className="
             grid
             grid-cols-1
-            lg:grid-cols-3
-            gap-6
+            sm:grid-cols-1
+            lg:grid-cols-2
+            gap-4
           "
         >
 
@@ -1147,8 +1150,9 @@ export default function Dashboard({
           className="
             grid
             grid-cols-1
-            lg:grid-cols-3
-            gap-6
+            sm:grid-cols-1
+            lg:grid-cols-2
+            gap-4
           "
         >
 

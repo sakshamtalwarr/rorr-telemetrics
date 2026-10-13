@@ -42,3 +42,250 @@
 .leaflet-popup-pane {
   z-index: 700 !important;
 }
+/* =====================================================
+   MOBILE RESPONSIVE UTILITIES
+   ===================================================== */
+
+@media (max-width: 768px) {
+
+    .responsive-padding {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
+    .responsive-margin {
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+
+    .max-width-mobile {
+        max-width: 100% !important;
+    }
+
+    .grid-mobile-full {
+        grid-template-columns: 1fr !important;
+    }
+
+    .grid-mobile-2 {
+        grid-template-columns: 1fr 1fr !important;
+    }
+
+    .grid-mobile-3 {
+        grid-template-columns: 1fr 1fr 1fr !important;
+    }
+
+    .grid-mobile-4 {
+        grid-template-columns: 1fr 1fr 1fr 1fr !important;
+    }
+
+    .text-mobile-14 {
+        font-size: 0.875rem !important;
+        line-height: 1.5rem !important;
+    }
+
+    .text-mobile-12 {
+        font-size: 0.75rem !important;
+        line-height: 1rem !important;
+    }
+
+    .padding-mobile-4 {
+        padding: 1rem !important;
+    }
+
+    .padding-mobile-6 {
+        padding: 1.5rem !important;
+    }
+
+}
+
+/* =====================================================
+   PIXEL FLOW ANIMATED BACKGROUND
+   ===================================================== */
+
+.ppf-canvas {
+
+    position: fixed;
+
+    top: 0;
+
+    left: 0;
+
+    width: 100%;
+
+    height: 100%;
+
+    z-index: 0;
+
+    pointer-events: none;
+
+}
+
+.pixel-flow-overlay {
+
+    position: absolute;
+
+    top: 0;
+
+    left: 0;
+
+    width: 100%;
+
+    height: 100%;
+
+    background-image:
+
+        linear-gradient(rgba(79, 70, 229, 0.03) 1px, transparent 1px),
+
+        linear-gradient(90deg, rgba(79, 70, 229, 0.03) 1px, transparent 1px);
+
+    background-size: 50px 50px;
+
+    opacity: 0.5;
+
+    pointer-events: none;
+
+}
+
+@keyframes pixel-flow {
+
+    0% {
+
+        transform: translate(0, 0);
+
+    }
+
+    100% {
+
+        transform: translate(50px, 50px);
+
+    }
+
+}
+
+.pixel-flow-animate {
+
+    animation: pixel-flow 20s linear infinite;
+
+}
+
+/* =====================================================
+   DARK MODE ENHANCEMENTS
+   ===================================================== */
+
+.dark-mode {
+
+    background: #050505 !important;
+
+    color: #e5e7eb !important;
+
+}
+
+.dark-mode .card {
+
+    background: rgba(5, 5, 5, 0.8) !important;
+
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+
+}
+
+.dark-mode .text {
+
+    color: #f472b6 !important;
+
+}
+
+.dark-mode .bg-indigo-500\/20 {
+
+    background: rgba(79, 70, 229, 0.2) !important;
+
+}
+
+.dark-mode .bg-black\/20 {
+
+    background: rgba(0, 0, 0, 0.2) !important;
+
+}
+
+.dark-mode .text-slate-500 {
+
+    color: #98a2a9 !important;
+
+}
+
+.dark-mode .text-slate-400 {
+
+    color: #718096 !important;
+
+}
+
+.dark-mode .text-slate-600 {
+
+    color: #4a5568 !important;
+
+}
+
+.dark-mode .bg-indigo-500\/10 {
+
+    background: rgba(79, 70, 229, 0.1) !important;
+
+}
+
+.dark-mode .bg-indigo-500\/30 {
+
+    background: rgba(79, 70, 229, 0.3) !important;
+
+}
+
+.dark-mode .border-white\/10 {
+
+    border-color: rgba(255, 255, 255, 0.1) !important;
+
+}
+
+.dark-mode .border-indigo-500\/20 {
+
+    border-color: rgba(79, 70, 229, 0.2) !important;
+
+}
+
+/* =====================================================
+   MOBILE TOUCH TARGETS
+   ===================================================== */
+
+@media (max-width: 640px) {
+
+    .touch-btn {
+
+        min-height: 48px !important;
+
+        min-width: 48px !important;
+
+        padding: 0.75rem !important;
+
+    }
+
+}
+
+/* =====================================================
+   SMOOTH TRANSITIONS FOR MOBILE
+   ===================================================== */
+
+@media (max-width: 768px) {
+
+    .reduce-motion-safe {
+
+        transition-duration: 0.2s !important;
+
+    }
+
+}
+
+/* =====================================================
+   LEAFLET RESPONSIVENESS ENHANCEMENT
+   ===================================================== */
+
+.leaflet-container {
+
+    border-radius: 0.5rem !important;
+
+}
