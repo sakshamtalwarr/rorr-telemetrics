@@ -1201,3 +1201,46 @@ export default function Dashboard({
   );
 
 }
+
+
+        {/* =============================================
+            FLOATING DOCK (MOBILE NAVIGATION)
+        ============================================= */}
+
+        <div className="floating-dock">
+
+            <div className="dock-links">
+
+                <a href="#metrics" className="dock-link">
+                    <div className="icon">
+                        <Speedometer />
+                    </div>
+                    <span className="dock-label">Metrics</span>
+                </a>
+
+                <a href="#map" className="dock-link">
+                    <div className="icon">
+                        <MapPin />
+                    </div>
+                    <span className="dock-label">Map</span>
+                </a>
+
+                <a href="#stats" className="dock-link">
+                    <div className="icon">
+                        <Timer />
+                    </div>
+                    <span className="dock-label">Stats</span>
+                </a>
+
+                <a href="#alerts" className="dock-link">
+                    <div className="icon">
+                        <Alert />
+                    </div>
+                    <span className="dock-label">Alerts</span>
+                </a>
+
+            </div>
+
+        </div>
+      );
+}
