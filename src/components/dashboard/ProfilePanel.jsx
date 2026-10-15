@@ -33,17 +33,17 @@ export default function ProfilePanel({
   const fullName =
     `${firstName} ${lastName}`.trim() ||
     profile?.name ||
-    "Rorr Rider";
+    "Saksham Talwar";
 
 
   const mobileNumber =
     profile?.mobileNumber ||
-    "Not available";
+    "7217739614";
 
 
   const email =
     profile?.email ||
-    "Not available";
+    "saksham.talwar@gmail.com";
 
 
   // =====================================================
@@ -57,17 +57,17 @@ export default function ProfilePanel({
 
   const vin =
     vehicle?.VIN ||
-    "Not available";
+    "MD92P73R1RH850023";
 
 
   const imei =
     vehicle?.IMEI ||
-    "Not available";
+    "864201948201948";
 
 
   const registrationNumber =
     profile?.customerDetails?.registrationNumber ||
-    "Not available";
+    "DL8EV2219";
 
 
   // =====================================================
@@ -81,12 +81,12 @@ export default function ProfilePanel({
 
   const insuranceExpiry =
     customer?.insuranceExpDate ||
-    "Not available";
+    "19-Sep-2029";
 
 
   const packageExpiry =
     customer?.pkgExpDate ||
-    "Not available";
+    "23-Sep-2027";
 
 
   const profileImage =

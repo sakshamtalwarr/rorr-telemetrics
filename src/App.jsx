@@ -329,12 +329,21 @@ async function getProfileWithRetry(
 
 function createFallbackProfile() {
   return {
-    firstName: "Rorr",
-    lastName: "Rider",
+    firstName: "Saksham",
+    lastName: "Talwar",
     mobileNumber:
       localStorage.getItem(
         "oben_mobile_number"
-      ) || "",
+      ) || "7217739614",
+    email: "saksham.talwar@gmail.com",
+    vehicleDetails: [
+      {
+        VIN: "MD92P73R1RH850023",
+        vehicleId: "DL8EV2219",
+        model: "RORR",
+        color: "ELECTRIC RED",
+      },
+    ],
   };
 }
 

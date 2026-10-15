@@ -16,9 +16,11 @@ import {
   LogOut,
   ChevronRight,
   Sparkles,
+  MapPin,
 } from "lucide-react";
 
 import GlassCard from "../components/common/GlassCard";
+import VehicleDocsWallet, { OFFICIAL_BIKE_RC } from "../components/profile/VehicleDocsWallet";
 
 export default function Profile({
   profile,
@@ -26,16 +28,18 @@ export default function Profile({
   onLogout,
   onNavigate,
 }) {
-  const firstName = profile?.firstName || profile?.name?.split(" ")[0] || "Rorr";
-  const lastName = profile?.lastName || profile?.name?.split(" ")[1] || "Rider";
+  const firstName = profile?.firstName || profile?.name?.split(" ")[0] || "Saksham";
+  const lastName = profile?.lastName || profile?.name?.split(" ")[1] || "Talwar";
   const fullName = `${firstName} ${lastName}`.trim();
-  const mobile = profile?.mobileNumber || "Not Registered";
-  const email = profile?.email || `${firstName.toLowerCase()}@obenrorr.com`;
+  const mobile = profile?.mobileNumber || OFFICIAL_BIKE_RC.rc_mobile_no;
+  const email = profile?.email || "saksham.talwar@gmail.com";
 
   const vehicle = profile?.vehicleDetails?.[0] || profile?.vehicleDetails || {};
-  const vin = vehicle?.VIN || liveData?.VIN || "OBEN-RORR-RED-2026-X";
+  const vin = vehicle?.VIN || liveData?.VIN || OFFICIAL_BIKE_RC.rc_chasi_no;
   const imei = vehicle?.IMEI || liveData?.IMEI || "864201948201948";
   const vcuId = vehicle?.VCUID || liveData?.VCUID || "VCU-RR-9042";
+  const regNo = OFFICIAL_BIKE_RC.rc_regn_no;
+  const motorNo = OFFICIAL_BIKE_RC.rc_eng_no;
 
   return (
     <div className="space-y-6 fade-in-scale max-w-5xl mx-auto pb-12">
@@ -76,11 +80,14 @@ export default function Profile({
             </p>
 
             <div className="flex flex-wrap items-center gap-2 pt-2">
-              <span className="px-2.5 py-1 rounded-xl bg-black/50 text-[10px] font-mono font-bold text-white border border-red-500/30">
+              <span className="px-2.5 py-1 rounded-xl bg-black/60 text-[10px] font-mono font-bold text-white border border-red-400/40 shadow-sm">
+                PLATE: {regNo}
+              </span>
+              <span className="px-2.5 py-1 rounded-xl bg-black/50 text-[10px] font-mono font-bold text-slate-200 border border-red-500/30">
                 VIN: {vin}
               </span>
               <span className="px-2.5 py-1 rounded-xl bg-red-950/70 text-[10px] font-mono font-bold text-red-200 border border-red-500/30">
-                10 kW Peak Motor
+                8 kW Peak Motor
               </span>
               <span className="px-2.5 py-1 rounded-xl bg-red-950/70 text-[10px] font-mono font-bold text-red-200 border border-red-500/30">
                 4.4 kWh LFP Safe Pack
@@ -149,6 +156,14 @@ export default function Profile({
             <div className="mt-5 space-y-3.5 text-xs">
               <div className="flex items-center justify-between p-3 rounded-2xl bg-black/25 border border-white/5">
                 <div className="flex items-center gap-2.5 text-slate-400">
+                  <Bike className="w-4 h-4 text-red-400" />
+                  <span>Registration No</span>
+                </div>
+                <span className="font-mono font-bold text-white tracking-wider">{regNo}</span>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-black/25 border border-white/5">
+                <div className="flex items-center gap-2.5 text-slate-400">
                   <Phone className="w-4 h-4 text-red-400" />
                   <span>Phone Number</span>
                 </div>
@@ -166,9 +181,19 @@ export default function Profile({
               <div className="flex items-center justify-between p-3 rounded-2xl bg-black/25 border border-white/5">
                 <div className="flex items-center gap-2.5 text-slate-400">
                   <Calendar className="w-4 h-4 text-red-400" />
-                  <span>Rider Since</span>
+                  <span>Registered Date</span>
                 </div>
-                <span className="font-mono font-bold text-slate-200">October 2024</span>
+                <span className="font-mono font-bold text-slate-200">{OFFICIAL_BIKE_RC.rc_regn_dt}</span>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-black/25 border border-white/5 space-y-1">
+                <div className="flex items-center gap-2 text-slate-400">
+                  <MapPin className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
+                  <span className="text-[11px] font-bold uppercase text-slate-400">Registered Address</span>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed font-sans pl-5">
+                  Uttam Nagar Indra Park, New Delhi - 110059
+                </p>
               </div>
 
               <div className="flex items-center justify-between p-3 rounded-2xl bg-black/25 border border-white/5">
@@ -209,18 +234,22 @@ export default function Profile({
                 <h3 className="font-bold text-white text-sm">
                   Warranty & Roadside Cover
                 </h3>
-                <p className="text-[11px] text-red-200/70">Oben Care Pro Protection</p>
+                <p className="text-[11px] text-red-200/70">Official Oben Factory Protection</p>
               </div>
             </div>
 
             <div className="space-y-2.5 text-xs">
               <div className="flex justify-between items-center py-1.5 border-b border-red-500/10">
                 <span className="text-slate-400">Motor & Battery Warranty</span>
-                <span className="font-bold text-emerald-400">8 Years / 100,000 km</span>
+                <span className="font-bold text-emerald-400">3 Years / 50,000 km</span>
               </div>
               <div className="flex justify-between items-center py-1.5 border-b border-red-500/10">
-                <span className="text-slate-400">Vehicle Warranty</span>
-                <span className="font-bold text-slate-200">3 Years (Valid till 2027)</span>
+                <span className="text-slate-400">Warranty Expiry</span>
+                <span className="font-mono font-bold text-amber-300">23-Sep-2027 (Active)</span>
+              </div>
+              <div className="flex justify-between items-center py-1.5 border-b border-red-500/10">
+                <span className="text-slate-400">Insurance Cover</span>
+                <span className="font-mono font-bold text-emerald-400">ICICI Lombard (Till 2029)</span>
               </div>
               <div className="flex justify-between items-center py-1.5 border-b border-red-500/10">
                 <span className="text-slate-400">Roadside Assistance (RSA)</span>
@@ -276,8 +305,8 @@ export default function Profile({
 
               <div className="p-3.5 rounded-2xl bg-black/30 border border-white/5">
                 <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Peak Motor</p>
-                <p className="text-xl font-black text-white mt-1">10 <span className="text-xs text-slate-400 font-semibold">kW</span></p>
-                <p className="text-[10px] text-slate-400 mt-0.5">IPMSM Mid-Drive</p>
+                <p className="text-xl font-black text-white mt-1">8 <span className="text-xs text-slate-400 font-semibold">kW</span></p>
+                <p className="text-[10px] text-slate-400 mt-0.5">IPMSM Mid-Drive (62 Nm)</p>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-black/30 border border-white/5">
@@ -309,6 +338,16 @@ export default function Profile({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="p-3 rounded-2xl bg-black/30 border border-white/5 flex flex-col justify-between">
+                <span className="text-slate-500 font-mono text-[10px] uppercase">Vehicle Plate</span>
+                <span className="font-mono font-black text-white text-sm mt-1">{regNo}</span>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-black/30 border border-white/5 flex flex-col justify-between">
+                <span className="text-slate-500 font-mono text-[10px] uppercase">Motor Serial No</span>
+                <span className="font-mono font-bold text-red-300 text-sm mt-1">{motorNo}</span>
+              </div>
+
               <div className="p-3 rounded-2xl bg-black/30 border border-white/5 flex flex-col justify-between">
                 <span className="text-slate-500 font-mono text-[10px] uppercase">Vehicle VIN</span>
                 <span className="font-mono font-bold text-slate-100 text-sm mt-1">{vin}</span>
@@ -371,6 +410,11 @@ export default function Profile({
           </div>
         </div>
       </div>
+
+      {/* =========================================================
+          VEHICLE DOCUMENTS & IDENTITY WALLET (RC, DL, INSURANCE, ETC.)
+      ========================================================= */}
+      <VehicleDocsWallet />
     </div>
   );
 }
