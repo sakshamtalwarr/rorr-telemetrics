@@ -106,76 +106,53 @@ body {
 
 
 /* =====================================================
-   LARGE INDIGO AMBIENT GLOW
+   VOLCANIC RED AMBIENT GLOW
    ===================================================== */
 
 .rorr-app-background::before {
-
     content: "";
-
     position: absolute;
-
     width: 700px;
     height: 700px;
-
-    top: -300px;
-    left: -250px;
-
+    top: -260px;
+    left: -220px;
     border-radius: 50%;
-
     background:
         radial-gradient(
             circle,
-            rgba(79, 70, 229, 0.32) 0%,
-            rgba(79, 70, 229, 0.18) 25%,
-            rgba(79, 70, 229, 0.06) 50%,
+            rgba(220, 38, 38, 0.28) 0%,
+            rgba(185, 28, 28, 0.16) 25%,
+            rgba(127, 29, 29, 0.06) 50%,
             transparent 72%
         );
-
-    filter: blur(35px);
-
+    filter: blur(40px);
     pointer-events: none;
-
-    animation:
-        rorrAmbientMove 14s ease-in-out infinite;
-
+    animation: rorrAmbientMove 16s ease-in-out infinite;
 }
 
-
 /* =====================================================
-   SECOND BLUE AMBIENT GLOW
+   DEEP WINE & RUBY AMBIENT GLOW
    ===================================================== */
 
 .rorr-app-background::after {
-
     content: "";
-
     position: absolute;
-
     width: 650px;
     height: 650px;
-
-    right: -250px;
-    bottom: -250px;
-
+    right: -220px;
+    bottom: -220px;
     border-radius: 50%;
-
     background:
         radial-gradient(
             circle,
-            rgba(14, 165, 233, 0.26) 0%,
-            rgba(14, 165, 233, 0.14) 28%,
-            rgba(14, 165, 233, 0.05) 52%,
+            rgba(153, 27, 27, 0.24) 0%,
+            rgba(127, 29, 29, 0.14) 28%,
+            rgba(69, 10, 10, 0.05) 52%,
             transparent 72%
         );
-
-    filter: blur(35px);
-
+    filter: blur(40px);
     pointer-events: none;
-
-    animation:
-        rorrAmbientMove2 17s ease-in-out infinite;
-
+    animation: rorrAmbientMove2 19s ease-in-out infinite;
 }
 
 

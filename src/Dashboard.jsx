@@ -35,6 +35,7 @@ import Alerts from "./components/dashboard/Alerts";
 import Profile from "./pages/Profile";
 import AntBmsMonitor from "./components/dashboard/AntBmsMonitor";
 import GlassCard from "./components/common/GlassCard";
+import RedDustBackground from "./components/common/RedDustBackground";
 import useVehicleTelemetry from "./hooks/useVehicleTelemetry";
 import { vehicleApi } from "./services/vehicleApi";
 
@@ -59,7 +60,7 @@ const INITIAL_GEOFENCE = {
 // ROUTE MAPPING
 // =====================================================
 
-const VALID_PAGES = ["overview", "telemetry", "map", "rides", "profile"];
+const VALID_PAGES = ["overview", "telemetry", "bms", "map", "rides", "profile"];
 
 function getPageFromHash() {
   try {
@@ -68,6 +69,7 @@ function getPageFromHash() {
 
     if (rawHash === "home" || rawHash === "dashboard") return "overview";
     if (rawHash === "systems" || rawHash === "diagnostic") return "telemetry";
+    if (rawHash === "bms" || rawHash === "battery" || rawHash === "cells" || rawHash === "ant") return "bms";
     if (rawHash === "geofence" || rawHash === "navigation") return "map";
     if (rawHash === "trips" || rawHash === "trends" || rawHash === "history") return "rides";
     if (rawHash === "account" || rawHash === "bike" || rawHash === "vehicle") return "profile";
@@ -315,6 +317,9 @@ export default function Dashboard({ profile, onLogout }) {
         paddingTop: "calc(0.5rem + env(safe-area-inset-top, 0px))",
       }}
     >
+      {/* Animated Volcanic Red Gradient Mesh with Pixel Dust */}
+      <RedDustBackground />
+
       {/* Volcanic Red & Black ambient lighting */}
       <div className="clay-red-ambient pointer-events-none" />
 
@@ -346,6 +351,8 @@ export default function Dashboard({ profile, onLogout }) {
               ? "Rider & Bike Profile"
               : activePage === "telemetry"
               ? "Live Telemetry & Diagnostics"
+              : activePage === "bms"
+              ? "ANT BMS Bluetooth Interface"
               : "Oben Rorr Cockpit"}
           </h2>
         </div>
@@ -624,7 +631,7 @@ export default function Dashboard({ profile, onLogout }) {
                     </div>
                     <button
                       type="button"
-                      onClick={() => navigateTo("telemetry")}
+                      onClick={() => navigateTo("bms")}
                       className="px-2.5 py-1 rounded-xl bg-red-600/30 hover:bg-red-600 text-red-300 hover:text-white font-bold text-[10px] border border-red-500/40 transition-colors"
                     >
                       BMS Live →
@@ -648,8 +655,29 @@ export default function Dashboard({ profile, onLogout }) {
         ========================================================= */}
         {activePage === "telemetry" && (
           <div className="space-y-6 fade-in-scale">
-            {/* ANT BMS Live Bluetooth Battery Monitor */}
-            <AntBmsMonitor />
+            {/* Quick Link Banner to Dedicated BMS Tab */}
+            <div className="clay-card p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gradient-to-r from-red-950/40 via-black/60 to-red-950/30 border border-red-500/30">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-red-600/20 text-red-400 border border-red-500/30">
+                  <Zap className="w-5 h-5 text-red-400" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-white text-sm">
+                    ANT Smart BMS (Bluetooth)
+                  </h4>
+                  <p className="text-xs text-slate-400">
+                    Live 20S cell voltages, balancing, and MOS temp are located in the dedicated BMS tab.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigateTo("bms")}
+                className="px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-all shadow-md active:scale-95 shrink-0"
+              >
+                Open ANT BMS Tab →
+              </button>
+            </div>
 
             <LiveTelemetry
               liveData={liveData}
@@ -662,6 +690,15 @@ export default function Dashboard({ profile, onLogout }) {
             </div>
 
             <SignalTrace history={liveData?.history || []} />
+          </div>
+        )}
+
+        {/* =========================================================
+            PAGE 3: DEDICATED ANT BMS SMART BATTERY INTERFACE
+        ========================================================= */}
+        {activePage === "bms" && (
+          <div className="space-y-6 fade-in-scale">
+            <AntBmsMonitor />
           </div>
         )}
 
@@ -713,7 +750,7 @@ export default function Dashboard({ profile, onLogout }) {
         ========================================================= */}
         {activePage === "rides" && (
           <div className="space-y-6 fade-in-scale">
-            <TripHistory liveData={liveData} />
+            <TripHistory liveData={liveData} trips={trips} />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <RidingTrends />

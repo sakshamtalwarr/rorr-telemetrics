@@ -37,6 +37,7 @@ export default function AntBmsMonitor() {
 
   // Calculate cell bar fill percentage (LFP standard 3.0V to 3.65V)
   function getCellPercentage(volts) {
+    if (!volts || volts <= 0) return 0;
     const min = 3.0;
     const max = 3.65;
     const pct = ((volts - min) / (max - min)) * 100;
@@ -242,7 +243,11 @@ export default function AntBmsMonitor() {
             <span className="text-xs font-semibold text-slate-400">mV</span>
           </p>
           <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">
-            {bmsData.deltaMv < 30 ? "Balanced" : "Balancing Req."}
+            {isConnected
+              ? bmsData.deltaMv < 30
+                ? "Balanced"
+                : "Balancing Req."
+              : "Standby (0 mV)"}
           </span>
         </div>
 
@@ -289,16 +294,22 @@ export default function AntBmsMonitor() {
             </h4>
           </div>
 
-          <div className="flex items-center gap-3 text-xs font-mono">
-            <span className="flex items-center gap-1.5 text-amber-300">
-              <span className="w-2 h-2 rounded-full bg-amber-400" />
-              Highest: C{bmsData.maxIndex} ({bmsData.maxCell}V)
-            </span>
-            <span className="flex items-center gap-1.5 text-sky-300">
-              <span className="w-2 h-2 rounded-full bg-sky-400" />
-              Lowest: C{bmsData.minIndex} ({bmsData.minCell}V)
-            </span>
-          </div>
+          {isConnected ? (
+            <div className="flex items-center gap-3 text-xs font-mono">
+              <span className="flex items-center gap-1.5 text-amber-300">
+                <span className="w-2 h-2 rounded-full bg-amber-400" />
+                Highest: C{bmsData.maxIndex} ({bmsData.maxCell}V)
+              </span>
+              <span className="flex items-center gap-1.5 text-sky-300">
+                <span className="w-2 h-2 rounded-full bg-sky-400" />
+                Lowest: C{bmsData.minIndex} ({bmsData.minCell}V)
+              </span>
+            </div>
+          ) : (
+            <div className="text-xs font-mono text-slate-500">
+              Disconnected • Values set to 0.000V
+            </div>
+          )}
         </div>
 
         {/* Cell Grid */}

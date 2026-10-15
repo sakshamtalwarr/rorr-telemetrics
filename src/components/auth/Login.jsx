@@ -22,6 +22,7 @@ import {
   sendOtp,
   verifyOtp,
 } from "../../services/authApi";
+import RedDustBackground from "../common/RedDustBackground";
 
 
 export default function Login({
@@ -541,6 +542,9 @@ export default function Login({
           BACKGROUND
       ================================================= */}
 
+      {/* Animated Red Gradient Mesh and Pixel Dust */}
+      <RedDustBackground />
+
       <div
         className="
           pointer-events-none
@@ -549,10 +553,7 @@ export default function Login({
           overflow-hidden
         "
       >
-
-
-        {/* LARGE INDIGO AMBIENT LIGHT */}
-
+        {/* VOLCANIC RED AMBIENT LIGHT */}
         <div
           className="
             login-ambient-one
@@ -562,14 +563,12 @@ export default function Login({
             h-[600px]
             w-[600px]
             rounded-full
-            bg-indigo-600/20
+            bg-red-600/20
             blur-[160px]
           "
         />
 
-
-        {/* CYAN AMBIENT LIGHT */}
-
+        {/* DEEP RUBY AMBIENT LIGHT */}
         <div
           className="
             login-ambient-two
@@ -579,14 +578,12 @@ export default function Login({
             h-[600px]
             w-[600px]
             rounded-full
-            bg-cyan-500/10
+            bg-red-900/25
             blur-[160px]
           "
         />
 
-
         {/* CENTRE GLOW */}
-
         <div
           className="
             absolute
@@ -597,7 +594,7 @@ export default function Login({
             -translate-x-1/2
             -translate-y-1/2
             rounded-full
-            bg-indigo-500/[0.035]
+            bg-red-500/[0.04]
             blur-[100px]
           "
         />

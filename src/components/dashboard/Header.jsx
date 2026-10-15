@@ -1,6 +1,7 @@
 import {
   Bike,
   Activity,
+  Zap,
   User,
   LogOut,
   Gauge,
@@ -33,6 +34,7 @@ export default function Header({
   const navLinks = [
     { id: "overview", label: "Overview", icon: Gauge },
     { id: "telemetry", label: "Telemetry", icon: Activity },
+    { id: "bms", label: "ANT BMS", icon: Zap },
     { id: "map", label: "Map & Fence", icon: MapPin },
     { id: "rides", label: "Rides", icon: TrendingUp },
     { id: "profile", label: "Profile", icon: User },

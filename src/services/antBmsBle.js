@@ -129,6 +129,37 @@ export function parseAntBmsFrame(view) {
 }
 
 /**
+ * Generates initial zeroes for disconnected state.
+ * By default, all 20 cell voltages and battery telemetry are set to 0.
+ */
+export function getZeroAntBmsData() {
+  const cellCount = 20; // Oben Rorr 20S Pack
+  const cells = new Array(cellCount).fill(0);
+
+  return {
+    cells,
+    cellCount,
+    totalVoltage: 0,
+    current: 0,
+    powerWatts: 0,
+    soc: 0,
+    remainingAh: 0,
+    totalAh: 0,
+    mosTemp: 0,
+    temp1: 0,
+    temp2: 0,
+    chargeMosfet: false,
+    dischargeMosfet: false,
+    maxCell: 0,
+    maxIndex: 0,
+    minCell: 0,
+    minIndex: 0,
+    deltaMv: 0,
+    timestamp: null,
+  };
+}
+
+/**
  * Generates realistic simulation data for 20S (72V) e-motorcycle pack
  * for testing and verification before hardware pairing.
  */

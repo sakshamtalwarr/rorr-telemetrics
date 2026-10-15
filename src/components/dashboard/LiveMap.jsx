@@ -205,10 +205,7 @@ export default function LiveMap({
 
 
 useEffect(() => {
-
-  if (
-    !geofenceMarkerRef.current
-  ) {
+  if (!mapRef.current) {
     return;
   }
 
@@ -219,14 +216,36 @@ useEffect(() => {
     return;
   }
 
-  geofenceMarkerRef.current.setLatLng([
-    geofence.lat,
-    geofence.lng,
-  ]);
+  if (!geofenceMarkerRef.current) {
+    const marker = L.marker([geofence.lat, geofence.lng], {
+      icon: geofenceIcon,
+      draggable: true,
+    }).addTo(mapRef.current);
 
+    marker.bindTooltip("Drag to move geofence", {
+      direction: "top",
+      offset: [0, -16],
+      permanent: false,
+    });
+
+    marker.on("dragend", (event) => {
+      const position = event.target.getLatLng();
+      if (onGeofenceMove) {
+        onGeofenceMove(position.lat, position.lng);
+      }
+    });
+
+    geofenceMarkerRef.current = marker;
+  } else {
+    geofenceMarkerRef.current.setLatLng([
+      geofence.lat,
+      geofence.lng,
+    ]);
+  }
 }, [
   geofence?.lat,
   geofence?.lng,
+  onGeofenceMove,
 ]);
 
   // ===================================================
@@ -1214,6 +1233,36 @@ if (
 
 
   // ===================================================
+  // LOCATE USER DEVICE (BROWSER GPS)
+  // ===================================================
+
+  function locateUserDevice() {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const userLat = pos.coords.latitude;
+        const userLng = pos.coords.longitude;
+        if (mapRef.current) {
+          mapRef.current.flyTo([userLat, userLng], 16, { animate: true, duration: 1.2 });
+          L.popup()
+            .setLatLng([userLat, userLng])
+            .setContent("<div style='font-family:Inter,sans-serif;font-size:11px;font-weight:bold;color:#111;padding:4px;'>📱 Your Device Location</div>")
+            .openOn(mapRef.current);
+        }
+      },
+      (err) => {
+        console.warn("User geolocation error:", err);
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  }
+
+
+  // ===================================================
   // FORMAT UPDATE TIME
   // ===================================================
 
@@ -1314,6 +1363,8 @@ if (
         flex
         flex-col
         p-2
+        w-full
+        min-h-[520px]
       "
       hover={false}
     >
@@ -1324,7 +1375,8 @@ if (
           relative
           flex
           flex-col
-          h-full md:h-[600px]
+          h-[520px] sm:h-[600px] lg:h-[680px]
+          w-full
           bg-[#0b0f14]
           rounded-2xl
           overflow-hidden
@@ -1443,6 +1495,28 @@ if (
             "
           >
 
+            {/* LOCATE USER PHONE */}
+            <button
+              type="button"
+              onClick={locateUserDevice}
+              title="Locate my phone GPS"
+              className="
+                px-2.5 py-1.5
+                rounded-xl
+                border border-red-500/30
+                bg-red-950/40
+                text-red-300
+                hover:bg-red-600 hover:text-white
+                text-xs font-mono font-bold
+                flex items-center gap-1.5
+                transition-all
+                shadow-sm
+              "
+            >
+              <LocateFixed className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">My Location</span>
+            </button>
+
             <button
               type="button"
               onClick={
@@ -1459,8 +1533,8 @@ if (
                 border-white/10
                 bg-black/40
                 text-slate-400
-                hover:text-indigo-300
-                hover:border-indigo-500/40
+                hover:text-red-300
+                hover:border-red-500/40
                 disabled:opacity-30
                 transition
               "
@@ -1489,8 +1563,8 @@ if (
                 border-white/10
                 bg-black/40
                 text-slate-400
-                hover:text-indigo-300
-                hover:border-indigo-500/40
+                hover:text-red-300
+                hover:border-red-500/40
                 transition
               "
             >
@@ -1517,8 +1591,9 @@ if (
           className="
             relative
             flex-1
-            min-h-0
+            min-h-[420px]
             w-full
+            h-full
           "
         >
 
@@ -1534,6 +1609,7 @@ if (
                 w-full
                 h-full
                 z-0
+                min-h-[420px]
               "
             />
 

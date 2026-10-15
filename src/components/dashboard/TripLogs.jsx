@@ -31,7 +31,7 @@ export default function TripLogs({
         <Clock
           className="
             w-5 h-5
-            text-blue-400
+            text-red-400
           "
         />
         Recent Trip Logs
@@ -60,13 +60,13 @@ export default function TripLogs({
                   index
                 }
                 className="
-                  bg-black/40
-                  border border-white/5
+                  bg-black/50
+                  border border-red-500/15
                   p-4
                   rounded-2xl
                   flex flex-col
                   gap-3
-                  hover:bg-white/5
+                  hover:bg-red-950/20
                   transition-colors
                 "
               >
@@ -113,7 +113,7 @@ export default function TripLogs({
                     <p className="
                       text-lg
                       font-black
-                      text-indigo-400
+                      text-red-400
                     ">
                       {distance}
                       {" km"}

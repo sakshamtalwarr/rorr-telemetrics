@@ -1,6 +1,7 @@
 import {
   Gauge,
   Activity,
+  Zap,
   MapPin,
   TrendingUp,
   User,
@@ -24,6 +25,11 @@ export default function Dock({
       id: "telemetry",
       label: "Telemetry",
       icon: Activity,
+    },
+    {
+      id: "bms",
+      label: "BMS",
+      icon: Zap,
     },
     {
       id: "map",

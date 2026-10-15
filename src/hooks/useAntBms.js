@@ -4,12 +4,14 @@ import {
   ANT_BMS_CHARACTERISTICS,
   parseAntBmsFrame,
   generateMockAntBmsData,
+  getZeroAntBmsData,
 } from "../services/antBmsBle";
 
 export default function useAntBms() {
   const [status, setStatus] = useState("disconnected"); // disconnected, connecting, connected, demo, error
   const [deviceName, setDeviceName] = useState(null);
-  const [bmsData, setBmsData] = useState(() => generateMockAntBmsData());
+  // Default values must strictly be 0 when no device is paired/connected
+  const [bmsData, setBmsData] = useState(() => getZeroAntBmsData());
   const [errorMessage, setErrorMessage] = useState("");
   const [isSupported, setIsSupported] = useState(true);
 
@@ -26,7 +28,7 @@ export default function useAntBms() {
     }
   }, []);
 
-  // Demo Mode Loop
+  // Demo Mode Loop & State Reset
   useEffect(() => {
     if (status === "demo") {
       demoIntervalRef.current = setInterval(() => {
@@ -36,6 +38,9 @@ export default function useAntBms() {
       if (demoIntervalRef.current) {
         clearInterval(demoIntervalRef.current);
         demoIntervalRef.current = null;
+      }
+      if (status === "disconnected") {
+        setBmsData(getZeroAntBmsData());
       }
     }
 
@@ -184,6 +189,7 @@ export default function useAntBms() {
     }
     setStatus("disconnected");
     setDeviceName(null);
+    setBmsData(getZeroAntBmsData());
   }, []);
 
   // Toggle Demo Mode
