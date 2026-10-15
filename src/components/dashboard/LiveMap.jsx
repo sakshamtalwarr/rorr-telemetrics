@@ -293,31 +293,23 @@ useEffect(() => {
 
 
     // =================================================
-    // MAP LAYERS (Free, open, no API key required)
+    // 100% OPEN-SOURCE & FREE MAP LAYERS (NO API KEY EVER)
     // =================================================
 
-    const darkLayer = L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    // 1. OpenStreetMap Stealth Dark (Inverted OSM - 100% Free, Public Benefit, No API key)
+    const osmDarkLayer = L.tileLayer(
+      "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
       {
-        attribution: "© OpenStreetMap © CARTO",
-        subdomains: "abcd",
+        attribution: "© OpenStreetMap contributors",
         maxZoom: 19,
         minZoom: 3,
+        className: "osm-dark-tiles",
       }
     );
 
-    const streetLayer = L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-      {
-        attribution: "© OpenStreetMap © CARTO",
-        subdomains: "abcd",
-        maxZoom: 19,
-        minZoom: 3,
-      }
-    );
-
-    const osmLayer = L.tileLayer(
-      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    // 2. OpenStreetMap Standard Street (100% Free, No API key)
+    const osmStandardLayer = L.tileLayer(
+      "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
       {
         attribution: "© OpenStreetMap contributors",
         maxZoom: 19,
@@ -325,8 +317,30 @@ useEffect(() => {
       }
     );
 
-    // Default to dark map for the Red & Black aesthetic
-    darkLayer.addTo(map);
+    // 3. OpenTopoMap Topographic (100% Free, No API key)
+    const topoLayer = L.tileLayer(
+      "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+      {
+        attribution: "© OpenStreetMap contributors, SRTM | OpenTopoMap",
+        subdomains: "abc",
+        maxZoom: 17,
+        minZoom: 3,
+      }
+    );
+
+    // 4. CyclOSM Mobility & Transit (100% Free, No API key)
+    const cyclosmLayer = L.tileLayer(
+      "https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png",
+      {
+        attribution: "© OpenStreetMap contributors | CyclOSM",
+        subdomains: "abc",
+        maxZoom: 18,
+        minZoom: 3,
+      }
+    );
+
+    // Default to OpenStreetMap Stealth Dark
+    osmDarkLayer.addTo(map);
 
     // =================================================
     // LAYER CONTROL
@@ -335,16 +349,16 @@ useEffect(() => {
     L.control
       .layers(
         {
-          "🌑 Stealth Dark": darkLayer,
-          "🗺️ Street Voyager": streetLayer,
-          "🌐 OpenStreetMap": osmLayer,
+          "🌑 Stealth Dark (OpenStreetMap)": osmDarkLayer,
+          "🌐 OpenStreetMap Standard": osmStandardLayer,
+          "🏔️ OpenTopoMap (Terrain)": topoLayer,
+          "🚴 CyclOSM (Mobility)": cyclosmLayer,
         },
         null,
         {
           collapsed: false,
           position: "topright",
         }
-
       )
       .addTo(map);
 

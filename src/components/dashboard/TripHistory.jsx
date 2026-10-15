@@ -93,10 +93,11 @@ export default function TripHistory({ liveData, trips = [] }) {
       });
 
       L.tileLayer(
-        "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+        "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
         {
           maxZoom: 19,
-          subdomains: "abcd",
+          attribution: "© OpenStreetMap",
+          className: "osm-dark-tiles",
         }
       ).addTo(map);
 
