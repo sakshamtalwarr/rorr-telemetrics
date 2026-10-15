@@ -33,6 +33,7 @@ import TripLogs from "./components/dashboard/TripLogs";
 import TripHistory from "./components/dashboard/TripHistory";
 import Alerts from "./components/dashboard/Alerts";
 import Profile from "./pages/Profile";
+import AntBmsMonitor from "./components/dashboard/AntBmsMonitor";
 import GlassCard from "./components/common/GlassCard";
 import useVehicleTelemetry from "./hooks/useVehicleTelemetry";
 import { vehicleApi } from "./services/vehicleApi";
@@ -619,11 +620,15 @@ export default function Dashboard({ profile, onLogout }) {
                   <div className="flex items-center justify-between p-3 rounded-2xl bg-black/30 border border-white/5">
                     <div>
                       <p className="text-[10px] text-slate-500 font-medium uppercase">Battery Architecture</p>
-                      <p className="text-xs font-bold text-slate-200">4.4 kWh LFP Pack • Safe & Tested</p>
+                      <p className="text-xs font-bold text-slate-200">4.4 kWh LFP Pack • ANT BMS Ready</p>
                     </div>
-                    <span className="px-2.5 py-1 rounded-xl bg-red-500/20 text-red-400 font-bold text-[10px] border border-red-500/30">
-                      OPTIMAL
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => navigateTo("telemetry")}
+                      className="px-2.5 py-1 rounded-xl bg-red-600/30 hover:bg-red-600 text-red-300 hover:text-white font-bold text-[10px] border border-red-500/40 transition-colors"
+                    >
+                      BMS Live →
+                    </button>
                   </div>
                 </GlassCard>
               </div>
@@ -643,6 +648,9 @@ export default function Dashboard({ profile, onLogout }) {
         ========================================================= */}
         {activePage === "telemetry" && (
           <div className="space-y-6 fade-in-scale">
+            {/* ANT BMS Live Bluetooth Battery Monitor */}
+            <AntBmsMonitor />
+
             <LiveTelemetry
               liveData={liveData}
               connectionStatus={connectionStatus}
