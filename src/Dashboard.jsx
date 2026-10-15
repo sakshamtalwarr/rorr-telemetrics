@@ -14,8 +14,8 @@ import {
   Activity,
   ArrowUpRight,
   ShieldCheck,
-  AlertTriangle,
-  Clock,
+  Bike,
+  User,
 } from "lucide-react";
 
 import Header from "./components/dashboard/Header";
@@ -32,8 +32,7 @@ import RidingTrends from "./components/dashboard/RidingTrends";
 import TripLogs from "./components/dashboard/TripLogs";
 import TripHistory from "./components/dashboard/TripHistory";
 import Alerts from "./components/dashboard/Alerts";
-import ProfilePanel from "./components/dashboard/ProfilePanel";
-import MaintenanceTracker from "./components/dashboard/MaintenanceTracker";
+import Profile from "./pages/Profile";
 import GlassCard from "./components/common/GlassCard";
 import useVehicleTelemetry from "./hooks/useVehicleTelemetry";
 import { vehicleApi } from "./services/vehicleApi";
@@ -59,19 +58,18 @@ const INITIAL_GEOFENCE = {
 // ROUTE MAPPING
 // =====================================================
 
-const VALID_PAGES = ["overview", "telemetry", "map", "rides", "vehicle"];
+const VALID_PAGES = ["overview", "telemetry", "map", "rides", "profile"];
 
 function getPageFromHash() {
   try {
     const rawHash = window.location.hash.replace(/^#\/?/, "").toLowerCase().trim();
     if (!rawHash) return "overview";
 
-    // Handle common aliases
     if (rawHash === "home" || rawHash === "dashboard") return "overview";
     if (rawHash === "systems" || rawHash === "diagnostic") return "telemetry";
     if (rawHash === "geofence" || rawHash === "navigation") return "map";
     if (rawHash === "trips" || rawHash === "trends" || rawHash === "history") return "rides";
-    if (rawHash === "profile" || rawHash === "maintenance") return "vehicle";
+    if (rawHash === "account" || rawHash === "bike" || rawHash === "vehicle") return "profile";
 
     if (VALID_PAGES.includes(rawHash)) {
       return rawHash;
@@ -83,28 +81,23 @@ function getPageFromHash() {
 }
 
 // =====================================================
-// DASHBOARD COMPONENT
+// DASHBOARD COMPONENT (DUALTONE RED & BLACK CLAY)
 // =====================================================
 
 export default function Dashboard({ profile, onLogout }) {
-  // Telemetry Hook
   const { liveData, connectionStatus } = useVehicleTelemetry();
 
-  // Dashboard Data State
   const [alerts, setAlerts] = useState([]);
   const [trips, setTrips] = useState([]);
-  const [showProfileModal, setShowProfileModal] = useState(false);
-  const [theme, setTheme] = useState("pastel");
+  // Default to dark Red & Black theme for Red Oben Rorr Electric
+  const [theme, setTheme] = useState("dark");
 
-  // Geofence State
   const [geofence, setGeofence] = useState(INITIAL_GEOFENCE);
   const [geofenceSaving, setGeofenceSaving] = useState(false);
   const [geofenceLoading, setGeofenceLoading] = useState(false);
 
-  // URL Hash Routing State
   const [activePage, setActivePage] = useState(() => getPageFromHash());
 
-  // Navigate function that updates URL hash & browser history
   const navigateTo = useCallback((page) => {
     if (!VALID_PAGES.includes(page)) return;
     setActivePage(page);
@@ -114,7 +107,6 @@ export default function Dashboard({ profile, onLogout }) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
-  // Listen to browser hash changes (back/forward buttons)
   useEffect(() => {
     function handleHashChange() {
       const page = getPageFromHash();
@@ -124,7 +116,6 @@ export default function Dashboard({ profile, onLogout }) {
     window.addEventListener("hashchange", handleHashChange);
     window.addEventListener("popstate", handleHashChange);
 
-    // Ensure hash reflects state on initial load
     if (!window.location.hash) {
       window.history.replaceState(null, "", "#/overview");
     }
@@ -135,14 +126,12 @@ export default function Dashboard({ profile, onLogout }) {
     };
   }, []);
 
-  // Get Vehicle ID
   const vehicleId =
     profile?.vehicleDetails?.[0]?.vehicleId ||
     profile?.vehicleDetails?.vehicleId ||
     liveData?.vehicleId ||
     null;
 
-  // Load Dashboard Data (Trips & Alerts)
   useEffect(() => {
     let cancelled = false;
 
@@ -176,7 +165,6 @@ export default function Dashboard({ profile, onLogout }) {
     };
   }, []);
 
-  // Load Geofence from Server
   useEffect(() => {
     let cancelled = false;
 
@@ -228,7 +216,6 @@ export default function Dashboard({ profile, onLogout }) {
     };
   }, [vehicleId]);
 
-  // Geofence Handlers
   function changeGeofence(updatedGeofence) {
     if (!updatedGeofence) return;
     setGeofence((prev) => ({
@@ -316,7 +303,7 @@ export default function Dashboard({ profile, onLogout }) {
         min-h-screen w-full
         font-sans
         transition-colors duration-500
-        ${theme === "pastel" ? "clay-pastel-theme" : "clay-dark-theme"}
+        ${theme === "dark" ? "clay-red-black-theme" : "clay-red-light-theme"}
         px-3 sm:px-6
         pt-2 sm:pt-4
         pb-28 md:pb-12
@@ -327,8 +314,8 @@ export default function Dashboard({ profile, onLogout }) {
         paddingTop: "calc(0.5rem + env(safe-area-inset-top, 0px))",
       }}
     >
-      {/* Ambient background clay lighting */}
-      <div className="clay-ambient-glows pointer-events-none" />
+      {/* Volcanic Red & Black ambient lighting */}
+      <div className="clay-red-ambient pointer-events-none" />
 
       {/* Floating Header */}
       <Header
@@ -340,41 +327,43 @@ export default function Dashboard({ profile, onLogout }) {
         activePage={activePage}
         onNavigate={navigateTo}
         theme={theme}
-        onToggleTheme={() => setTheme((t) => (t === "pastel" ? "dark" : "pastel"))}
-        onProfileClick={() => navigateTo("vehicle")}
+        onToggleTheme={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+        onProfileClick={() => navigateTo("profile")}
         onLogout={onLogout}
       />
 
       {/* Page Title & Breadcrumb Indicator */}
       <div className="max-w-[1400px] mx-auto mt-4 mb-2 flex items-center justify-between px-1">
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
-          <h2 className="text-lg sm:text-2xl font-black tracking-tight text-slate-800 capitalize">
+        <div className="flex items-center gap-2.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]" />
+          <h2 className="text-lg sm:text-2xl font-black tracking-tight text-white capitalize">
             {activePage === "map"
-              ? "Live Map & Geofence"
+              ? "Live Tracking & Geofence"
               : activePage === "rides"
               ? "Riding Trends & Analytics"
-              : activePage === "vehicle"
-              ? "Vehicle & Maintenance"
+              : activePage === "profile"
+              ? "Rider & Bike Profile"
               : activePage === "telemetry"
               ? "Live Telemetry & Diagnostics"
-              : "Cockpit Overview"}
+              : "Oben Rorr Cockpit"}
           </h2>
         </div>
 
-        <div className="text-[11px] font-mono font-semibold text-slate-500 hidden sm:block">
-          URL: <span className="text-indigo-600 bg-white/70 px-2 py-0.5 rounded-lg shadow-xs">#/{activePage}</span>
+        <div className="text-[11px] font-mono font-bold text-red-400 hidden sm:flex items-center gap-2">
+          <span className="px-2 py-0.5 rounded-lg bg-red-950/50 border border-red-500/30">
+            #/{activePage}
+          </span>
         </div>
       </div>
 
       {/* Main Content Area */}
       <main className="max-w-[1400px] mx-auto relative z-10 mt-3">
         {/* =========================================================
-            PAGE 1: OVERVIEW (Compact Cockpit, No Endless Scrolling!)
+            PAGE 1: OVERVIEW (Clean, Punchy, No Endless Scroll!)
         ========================================================= */}
         {activePage === "overview" && (
           <div className="space-y-4 sm:space-y-6 fade-in-scale">
-            {/* Top Metric Cards - Responsive Grid */}
+            {/* Top Metric Cards - Dualtone Red & Black */}
             <section
               className="
                 grid
@@ -390,8 +379,8 @@ export default function Dashboard({ profile, onLogout }) {
                 value={liveData?.speed ?? 0}
                 unit="km/h"
                 icon={Gauge}
-                iconClass="text-sky-500"
-                variant="sky"
+                iconClass="text-white"
+                variant="red" // Hero Volcanic Red Clay Card
               />
 
               <MetricCard
@@ -399,8 +388,8 @@ export default function Dashboard({ profile, onLogout }) {
                 value={liveData?.soc ?? 0}
                 unit="%"
                 icon={Battery}
-                iconClass={liveData?.soc < 20 ? "text-rose-500" : "text-emerald-500"}
-                variant="mint"
+                iconClass={liveData?.soc < 20 ? "text-red-500" : "text-emerald-400"}
+                variant="default" // Carbon Black Clay Card
               />
 
               <MetricCard
@@ -408,8 +397,8 @@ export default function Dashboard({ profile, onLogout }) {
                 value={liveData?.range ?? 0}
                 unit="km"
                 icon={Navigation}
-                iconClass="text-indigo-500"
-                variant="lavender"
+                iconClass="text-red-400"
+                variant="default"
               />
 
               <MetricCard
@@ -417,8 +406,8 @@ export default function Dashboard({ profile, onLogout }) {
                 value={liveData?.packVoltage ?? 0}
                 unit="V"
                 icon={Zap}
-                iconClass="text-amber-500"
-                variant="butter"
+                iconClass="text-red-400"
+                variant="wine" // Deep Dark Red Wine Clay Card
               />
 
               <MetricCard
@@ -426,8 +415,8 @@ export default function Dashboard({ profile, onLogout }) {
                 value={liveData?.motorTemperature ?? 0}
                 unit="°C"
                 icon={Thermometer}
-                iconClass={liveData?.motorTemperature > 80 ? "text-rose-500" : "text-orange-500"}
-                variant="peach"
+                iconClass={liveData?.motorTemperature > 80 ? "text-red-500" : "text-slate-300"}
+                variant="default"
                 className="col-span-2 sm:col-span-1 md:col-span-1"
               />
             </section>
@@ -439,15 +428,15 @@ export default function Dashboard({ profile, onLogout }) {
                 <GlassCard variant="default" className="p-5 sm:p-6 flex flex-col justify-between h-full">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2.5">
-                      <div className="p-2 rounded-2xl bg-emerald-100 text-emerald-700 shadow-xs">
+                      <div className="p-2 rounded-2xl bg-red-500/20 text-red-400 border border-red-500/30">
                         <MapPin className="w-5 h-5" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-slate-800 text-sm sm:text-base">
-                          GPS Location & Tracking
+                        <h3 className="font-bold text-white text-sm sm:text-base">
+                          Live GPS Tracking
                         </h3>
-                        <p className="text-xs text-slate-500">
-                          Live coordinates & geofence monitor
+                        <p className="text-xs text-slate-400">
+                          Real-time bike telemetry & location guard
                         </p>
                       </div>
                     </div>
@@ -457,11 +446,11 @@ export default function Dashboard({ profile, onLogout }) {
                       onClick={() => navigateTo("map")}
                       className="
                         clay-button
-                        px-3 py-1.5 rounded-2xl
-                        bg-indigo-50 hover:bg-indigo-100
-                        text-indigo-700 text-xs font-bold
+                        px-3.5 py-1.5 rounded-2xl
+                        bg-red-600 hover:bg-red-500
+                        text-white text-xs font-bold
                         flex items-center gap-1.5
-                        shadow-[0_4px_10px_rgba(99,102,241,0.12),inset_0_1px_2px_rgba(255,255,255,0.9)]
+                        shadow-[0_4px_12px_rgba(220,38,38,0.4)]
                       "
                     >
                       <span>Full Map</span>
@@ -470,125 +459,126 @@ export default function Dashboard({ profile, onLogout }) {
                   </div>
 
                   {/* Compact Map Preview Banner */}
-                  <div className="relative rounded-2xl overflow-hidden border border-slate-200/80 bg-slate-100 h-48 sm:h-56 mb-4">
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-sky-500/10 to-emerald-500/10 flex flex-col items-center justify-center p-4 text-center">
-                      <div className="p-3 rounded-full bg-white shadow-md text-emerald-600 mb-2 animate-bounce">
+                  <div className="relative rounded-2xl overflow-hidden border border-red-500/20 bg-[#0B0C11] h-48 sm:h-56 mb-4">
+                    <div className="absolute inset-0 bg-gradient-to-br from-red-950/30 via-black to-black/80 flex flex-col items-center justify-center p-4 text-center">
+                      <div className="p-3.5 rounded-full bg-red-600 shadow-[0_0_20px_rgba(220,38,38,0.7)] text-white mb-2 animate-pulse">
                         <MapPin className="w-6 h-6" />
                       </div>
-                      <p className="text-xs font-mono font-bold text-slate-700">
+                      <p className="text-xs font-mono font-bold text-slate-200">
                         {liveData?.latitude && liveData?.longitude
                           ? `${Number(liveData.latitude).toFixed(5)}° N, ${Number(liveData.longitude).toFixed(5)}° E`
                           : "Acquiring GPS Signal..."}
                       </p>
-                      <span className="text-[11px] text-slate-500 mt-1">
+                      <span className="text-[11px] text-red-300 font-medium mt-1">
                         Geofence: {geofence?.enabled ? `Active (${geofence.radius}m)` : "Disabled"}
                       </span>
                     </div>
 
                     <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center">
-                      <span className="px-2.5 py-1 rounded-xl bg-white/90 backdrop-blur-md text-[10px] font-bold text-slate-700 shadow-sm">
+                      <span className="px-2.5 py-1 rounded-xl bg-black/80 backdrop-blur-md text-[10px] font-bold text-slate-200 border border-white/10">
                         Odometer: {liveData?.odometer ?? 0} km
                       </span>
-                      <span className="px-2.5 py-1 rounded-xl bg-white/90 backdrop-blur-md text-[10px] font-bold text-indigo-700 shadow-sm">
+                      <span className="px-2.5 py-1 rounded-xl bg-black/80 backdrop-blur-md text-[10px] font-bold text-red-400 border border-red-500/30">
                         Ignition: {liveData?.ignition ? "ON" : "OFF"}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+                  <div className="flex items-center justify-between text-xs text-slate-400 px-1">
                     <span>Last packet: {liveData?.packetCreatedAt ? new Date(liveData.packetCreatedAt).toLocaleTimeString() : "Live"}</span>
                     <button
                       type="button"
                       onClick={() => navigateTo("map")}
-                      className="text-indigo-600 font-bold hover:underline"
+                      className="text-red-400 font-bold hover:underline"
                     >
-                      Configure Geofence →
+                      Open Geofence Controls →
                     </button>
                   </div>
                 </GlassCard>
               </div>
 
-              {/* Subsystems Snapshot */}
+              {/* Subsystems & Profile Summary */}
               <div className="lg:col-span-5 flex flex-col gap-4">
-                <GlassCard variant="lavender" className="p-5 sm:p-6 flex-1">
+                <GlassCard variant="wine" className="p-5 sm:p-6 flex-1">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
-                      <div className="p-2 rounded-2xl bg-indigo-100 text-indigo-700">
+                      <div className="p-2 rounded-2xl bg-red-500/20 text-red-400">
                         <ShieldCheck className="w-4 h-4" />
                       </div>
-                      <h4 className="font-bold text-slate-800 text-sm">
+                      <h4 className="font-bold text-white text-sm">
                         Vehicle Core Status
                       </h4>
                     </div>
                     <button
                       type="button"
                       onClick={() => navigateTo("telemetry")}
-                      className="text-xs font-bold text-indigo-600 hover:underline"
+                      className="text-xs font-bold text-red-400 hover:underline"
                     >
-                      Details →
+                      Diagnostics →
                     </button>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2.5 text-xs">
-                    <div className="p-3 rounded-2xl bg-white/80 border border-white shadow-xs flex items-center justify-between">
-                      <span className="text-slate-600 font-medium">Ignition</span>
-                      <span className={`font-bold px-2 py-0.5 rounded-lg text-[10px] ${liveData?.ignition ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"}`}>
+                    <div className="p-3 rounded-2xl bg-black/40 border border-white/5 flex items-center justify-between">
+                      <span className="text-slate-400 font-medium">Ignition</span>
+                      <span className={`font-bold px-2 py-0.5 rounded-lg text-[10px] ${liveData?.ignition ? "bg-emerald-950/60 text-emerald-400 border border-emerald-500/30" : "bg-black/40 text-slate-500"}`}>
                         {liveData?.ignition ? "ON" : "OFF"}
                       </span>
                     </div>
 
-                    <div className="p-3 rounded-2xl bg-white/80 border border-white shadow-xs flex items-center justify-between">
-                      <span className="text-slate-600 font-medium">Charger</span>
-                      <span className={`font-bold px-2 py-0.5 rounded-lg text-[10px] ${liveData?.chargerConnected ? "bg-sky-100 text-sky-700" : "bg-slate-200 text-slate-600"}`}>
+                    <div className="p-3 rounded-2xl bg-black/40 border border-white/5 flex items-center justify-between">
+                      <span className="text-slate-400 font-medium">Charger</span>
+                      <span className={`font-bold px-2 py-0.5 rounded-lg text-[10px] ${liveData?.chargerConnected ? "bg-red-950/60 text-red-400 border border-red-500/30" : "bg-black/40 text-slate-500"}`}>
                         {liveData?.chargerConnected ? "PLUGGED" : "OFF"}
                       </span>
                     </div>
 
-                    <div className="p-3 rounded-2xl bg-white/80 border border-white shadow-xs flex items-center justify-between">
-                      <span className="text-slate-600 font-medium">Side Stand</span>
-                      <span className={`font-bold px-2 py-0.5 rounded-lg text-[10px] ${liveData?.sideStandStatus ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
+                    <div className="p-3 rounded-2xl bg-black/40 border border-white/5 flex items-center justify-between">
+                      <span className="text-slate-400 font-medium">Side Stand</span>
+                      <span className={`font-bold px-2 py-0.5 rounded-lg text-[10px] ${liveData?.sideStandStatus ? "bg-amber-950/60 text-amber-400 border border-amber-500/30" : "bg-emerald-950/60 text-emerald-400 border border-emerald-500/30"}`}>
                         {liveData?.sideStandStatus ? "DOWN" : "UP"}
                       </span>
                     </div>
 
-                    <div className="p-3 rounded-2xl bg-white/80 border border-white shadow-xs flex items-center justify-between">
-                      <span className="text-slate-600 font-medium">Kill Switch</span>
-                      <span className={`font-bold px-2 py-0.5 rounded-lg text-[10px] ${liveData?.killSwitchStatus ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>
-                        {liveData?.killSwitchStatus ? "ENGAGED" : "OFF"}
+                    <div className="p-3 rounded-2xl bg-black/40 border border-white/5 flex items-center justify-between">
+                      <span className="text-slate-400 font-medium">Kill Switch</span>
+                      <span className={`font-bold px-2 py-0.5 rounded-lg text-[10px] ${liveData?.killSwitchStatus ? "bg-red-950/60 text-red-400 border border-red-500/30" : "bg-emerald-950/60 text-emerald-400 border border-emerald-500/30"}`}>
+                        {liveData?.killSwitchStatus ? "ACTIVE" : "READY"}
                       </span>
                     </div>
                   </div>
                 </GlassCard>
 
-                {/* Quick Diagnostics Snapshot */}
-                <GlassCard variant="mint" className="p-5 sm:p-6 flex-1">
+                {/* Bike & Rider Card */}
+                <GlassCard variant="default" className="p-5 sm:p-6 flex-1">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <div className="p-2 rounded-2xl bg-emerald-100 text-emerald-700">
-                        <Activity className="w-4 h-4" />
+                      <div className="p-2 rounded-2xl bg-red-600 text-white shadow-sm">
+                        <Bike className="w-4 h-4" />
                       </div>
-                      <h4 className="font-bold text-slate-800 text-sm">
-                        Health & Maintenance
-                      </h4>
+                      <div>
+                        <h4 className="font-bold text-white text-sm">
+                          Oben Rorr Red Edition
+                        </h4>
+                        <p className="text-[11px] text-slate-400">Owner: {profile?.firstName || "Rider"}</p>
+                      </div>
                     </div>
                     <button
                       type="button"
-                      onClick={() => navigateTo("vehicle")}
-                      className="text-xs font-bold text-emerald-700 hover:underline"
+                      onClick={() => navigateTo("profile")}
+                      className="text-xs font-bold text-red-400 hover:underline"
                     >
-                      Service Log →
+                      View Profile →
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between p-3 rounded-2xl bg-white/80 border border-white">
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-black/30 border border-white/5">
                     <div>
-                      <p className="text-[11px] text-slate-500 font-medium">System Health</p>
-                      <p className="text-sm font-bold text-slate-800">
-                        {liveData?.error && liveData.error !== "No error" ? liveData.error : "All Systems Nominal"}
-                      </p>
+                      <p className="text-[10px] text-slate-500 font-medium uppercase">Battery Architecture</p>
+                      <p className="text-xs font-bold text-slate-200">4.4 kWh LFP Pack • Safe & Tested</p>
                     </div>
-                    <span className="px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-700 font-bold text-[10px]">
-                      READY
+                    <span className="px-2.5 py-1 rounded-xl bg-red-500/20 text-red-400 font-bold text-[10px] border border-red-500/30">
+                      OPTIMAL
                     </span>
                   </div>
                 </GlassCard>
@@ -624,7 +614,7 @@ export default function Dashboard({ profile, onLogout }) {
         )}
 
         {/* =========================================================
-            PAGE 3: LIVE MAP & GEOFENCE
+            PAGE 3: LIVE MAP & GEOFENCE (No API key needed!)
         ========================================================= */}
         {activePage === "map" && (
           <div className="space-y-6 fade-in-scale">
@@ -683,24 +673,15 @@ export default function Dashboard({ profile, onLogout }) {
         )}
 
         {/* =========================================================
-            PAGE 5: VEHICLE & MAINTENANCE & PROFILE
+            PAGE 5: DEDICATED PROFILE & BIKE SHOWCASE
         ========================================================= */}
-        {activePage === "vehicle" && (
-          <div className="space-y-6 fade-in-scale">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <ProfilePanel
-                profile={profile}
-                liveData={liveData}
-                onLogout={onLogout}
-              />
-
-              <MaintenanceTracker odometer={liveData?.odometer ?? 0} />
-            </div>
-
-            {alerts.length > 0 && (
-              <Alerts alerts={alerts} />
-            )}
-          </div>
+        {activePage === "profile" && (
+          <Profile
+            profile={profile}
+            liveData={liveData}
+            onLogout={onLogout}
+            onNavigate={navigateTo}
+          />
         )}
       </main>
 

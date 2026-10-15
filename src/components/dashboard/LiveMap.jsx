@@ -274,76 +274,40 @@ useEffect(() => {
 
 
     // =================================================
-    // MAP LAYERS
+    // MAP LAYERS (Free, open, no API key required)
     // =================================================
 
-    const streetLayer =
-      L.tileLayer(
-        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
-        {
-
-          attribution:
-            "Tiles © Esri — Sources: Esri, HERE, Garmin, FAO, NOAA, USGS",
-
-          maxZoom:
-            19,
-
-          minZoom:
-            3,
-
-        }
-      );
-
-
-    const satelliteLayer =
-      L.tileLayer(
-        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        {
-
-          attribution:
-            "Tiles © Esri",
-
-          maxZoom:
-            19,
-
-          minZoom:
-            3,
-
-        }
-      );
-
-
-    const labelsLayer =
-      L.tileLayer(
-        "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
-        {
-
-          attribution:
-            "Labels © Esri",
-
-          maxZoom:
-            19,
-
-          minZoom:
-            3,
-
-        }
-      );
-
-
-    const satelliteHybrid =
-      L.layerGroup([
-        satelliteLayer,
-        labelsLayer,
-      ]);
-
-
-    // Default
-
-    streetLayer.addTo(
-      map
+    const darkLayer = L.tileLayer(
+      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+      {
+        attribution: "© OpenStreetMap © CARTO",
+        subdomains: "abcd",
+        maxZoom: 19,
+        minZoom: 3,
+      }
     );
 
+    const streetLayer = L.tileLayer(
+      "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+      {
+        attribution: "© OpenStreetMap © CARTO",
+        subdomains: "abcd",
+        maxZoom: 19,
+        minZoom: 3,
+      }
+    );
+
+    const osmLayer = L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {
+        attribution: "© OpenStreetMap contributors",
+        maxZoom: 19,
+        minZoom: 3,
+      }
+    );
+
+    // Default to dark map for the Red & Black aesthetic
+    darkLayer.addTo(map);
 
     // =================================================
     // LAYER CONTROL
@@ -351,18 +315,12 @@ useEffect(() => {
 
     L.control
       .layers(
-
         {
-          "🗺️ Street": streetLayer,
-
-          "🛰️ Satellite": satelliteLayer,
-
-          "🌐 Hybrid": satelliteHybrid,
-
+          "🌑 Stealth Dark": darkLayer,
+          "🗺️ Street Voyager": streetLayer,
+          "🌐 OpenStreetMap": osmLayer,
         },
-
         null,
-
         {
           collapsed: false,
           position: "topright",

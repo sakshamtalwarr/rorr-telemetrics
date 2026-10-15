@@ -1,22 +1,25 @@
 /**
- * Claymorphic Card component with soft 3D bevels, dual shadows,
- * and pastel theme support. Drops directly into existing components
- * without breaking signatures.
+ * True Hype4-style Claymorphic Card.
+ * Features dual inner shadows (top-left highlight + bottom-right inflated shading)
+ * with soft volumetric drop shadows in a dual-tone Red & Black / Dark Red aesthetic.
  */
 export default function GlassCard({
   children,
   className = "",
   hover = true,
-  variant = "default", // 'default' (cloud white), 'lavender', 'mint', 'peach', 'sky', 'butter'
+  variant = "default", // 'default' (carbon black), 'red' (volcanic red), 'wine' (deep dark red), 'porcelain'
 }) {
   const variantClasses = {
-    default: "clay-card-default",
-    lavender: "clay-card-lavender",
-    mint: "clay-card-mint",
-    peach: "clay-card-peach",
-    sky: "clay-card-sky",
-    butter: "clay-card-butter",
-    plain: "clay-card-plain",
+    default: "clay-card-carbon",
+    red: "clay-card-hero-red",
+    wine: "clay-card-wine",
+    porcelain: "clay-card-porcelain",
+    // aliases for backward compatibility
+    sky: "clay-card-carbon",
+    mint: "clay-card-wine",
+    lavender: "clay-card-carbon",
+    peach: "clay-card-hero-red",
+    butter: "clay-card-wine",
   };
 
   const selectedVariant = variantClasses[variant] || variantClasses.default;
@@ -31,18 +34,18 @@ export default function GlassCard({
         ${selectedVariant}
         ${
           hover
-            ? "hover:-translate-y-1 hover:shadow-[0_20px_35px_-8px_rgba(100,116,139,0.18),0_8px_16px_-4px_rgba(100,116,139,0.1)]"
+            ? "hover:-translate-y-1 hover:shadow-[0_22px_44px_-10px_rgba(0,0,0,0.9),0_0_25px_-2px_rgba(220,38,38,0.25)]"
             : ""
         }
         ${className}
       `}
     >
-      {/* Soft clay top specular glaze */}
+      {/* Subtle top specular rim */}
       <div
         className="
-          absolute inset-x-0 top-0 h-10
-          bg-gradient-to-b from-white/60 to-transparent
-          pointer-events-none rounded-t-3xl opacity-80
+          absolute inset-x-0 top-0 h-8
+          bg-gradient-to-b from-white/10 to-transparent
+          pointer-events-none rounded-t-3xl opacity-60
         "
       />
 

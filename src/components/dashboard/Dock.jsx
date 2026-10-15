@@ -3,12 +3,12 @@ import {
   Activity,
   MapPin,
   TrendingUp,
-  Wrench,
+  User,
 } from "lucide-react";
 
 /**
- * Floating Clay Dock for mobile & handheld devices (iPhone, Pixel 7, Android).
- * Features tactile claymorphic pills, pastel accents, and haptic-friendly tap areas.
+ * Dual-Tone Red & Black Floating Clay Dock for mobile & handheld devices.
+ * Designed for the Red Oben Rorr Electric motorcycle.
  */
 export default function Dock({
   activePage,
@@ -17,43 +17,28 @@ export default function Dock({
   const navItems = [
     {
       id: "overview",
-      label: "Overview",
+      label: "Cockpit",
       icon: Gauge,
-      pastelClass: "from-sky-100 to-indigo-100 text-sky-600 border-sky-200",
-      activeText: "text-sky-700",
-      glowColor: "bg-sky-400",
     },
     {
       id: "telemetry",
       label: "Telemetry",
       icon: Activity,
-      pastelClass: "from-indigo-100 to-purple-100 text-indigo-600 border-indigo-200",
-      activeText: "text-indigo-700",
-      glowColor: "bg-indigo-400",
     },
     {
       id: "map",
-      label: "Live Map",
+      label: "Map",
       icon: MapPin,
-      pastelClass: "from-emerald-100 to-teal-100 text-emerald-600 border-emerald-200",
-      activeText: "text-emerald-700",
-      glowColor: "bg-emerald-400",
     },
     {
       id: "rides",
       label: "Rides",
       icon: TrendingUp,
-      pastelClass: "from-amber-100 to-rose-100 text-amber-600 border-amber-200",
-      activeText: "text-amber-700",
-      glowColor: "bg-amber-400",
     },
     {
-      id: "vehicle",
-      label: "Vehicle",
-      icon: Wrench,
-      pastelClass: "from-purple-100 to-pink-100 text-purple-600 border-purple-200",
-      activeText: "text-purple-700",
-      glowColor: "bg-purple-400",
+      id: "profile",
+      label: "Profile",
+      icon: User,
     },
   ];
 
@@ -76,7 +61,6 @@ export default function Dock({
           px-2 py-2 sm:px-3 sm:py-2.5
           flex items-center justify-around gap-1
           rounded-3xl
-          border border-white/80
           backdrop-blur-2xl
         "
       >
@@ -92,44 +76,34 @@ export default function Dock({
               className={`
                 relative flex flex-col items-center justify-center
                 flex-1 py-1.5 px-1 sm:px-2 rounded-2xl
-                transition-all duration-300 ease-out
+                transition-all duration-200 ease-out
                 touch-manipulation select-none
                 ${
                   isActive
                     ? `
                       clay-active-dock-pill
-                      bg-white
-                      shadow-[0_8px_16px_-4px_rgba(100,116,139,0.2),inset_0_2px_4px_rgba(255,255,255,1),inset_0_-2px_4px_rgba(0,0,0,0.05)]
+                      bg-gradient-to-b from-red-600 to-red-700
+                      text-white
+                      shadow-[0_8px_20px_-2px_rgba(220,38,38,0.5),inset_0_2px_4px_rgba(255,255,255,0.4),inset_0_-2px_4px_rgba(0,0,0,0.4)]
                       scale-105
-                      ${item.activeText}
                     `
-                    : "text-slate-500 hover:text-slate-800 hover:bg-white/40 active:scale-95"
+                    : "text-slate-400 hover:text-white hover:bg-white/5 active:scale-95"
                 }
               `}
             >
-              <div
-                className={`
-                  relative flex items-center justify-center
-                  w-8 h-8 rounded-xl transition-all duration-300
-                  ${
-                    isActive
-                      ? `bg-gradient-to-br ${item.pastelClass} shadow-sm`
-                      : "bg-transparent"
-                  }
-                `}
-              >
+              <div className="relative flex items-center justify-center w-7 h-7">
                 <Icon
                   className={`
-                    w-4 h-4 transition-transform duration-300
-                    ${isActive ? "scale-110" : "scale-100"}
+                    w-4 h-4 transition-transform duration-200
+                    ${isActive ? "scale-110 text-white" : "text-slate-400"}
                   `}
                 />
               </div>
 
               <span
                 className={`
-                  text-[10px] tracking-tight mt-0.5 font-bold transition-all
-                  ${isActive ? "font-extrabold" : "font-medium"}
+                  text-[10px] tracking-tight mt-0.5 transition-all
+                  ${isActive ? "font-black text-white" : "font-medium text-slate-400"}
                 `}
               >
                 {item.label}
@@ -137,10 +111,10 @@ export default function Dock({
 
               {isActive && (
                 <span
-                  className={`
-                    absolute -bottom-0.5 w-1 h-1 rounded-full ${item.glowColor}
-                    shadow-[0_0_6px_currentColor]
-                  `}
+                  className="
+                    absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-white
+                    shadow-[0_0_8px_rgba(255,255,255,0.9)]
+                  "
                 />
               )}
             </button>

@@ -6,7 +6,6 @@ import {
   Gauge,
   MapPin,
   TrendingUp,
-  Wrench,
   Sun,
   Moon,
 } from "lucide-react";
@@ -19,7 +18,7 @@ export default function Header({
   onLogout,
   activePage = "overview",
   onNavigate = () => {},
-  theme = "pastel",
+  theme = "dark",
   onToggleTheme = () => {},
 }) {
   const connected =
@@ -28,15 +27,15 @@ export default function Header({
 
   const firstName =
     profile?.firstName ||
-    profile?.name ||
-    "Profile";
+    profile?.name?.split(" ")[0] ||
+    "Rider";
 
   const navLinks = [
     { id: "overview", label: "Overview", icon: Gauge },
     { id: "telemetry", label: "Telemetry", icon: Activity },
     { id: "map", label: "Map & Fence", icon: MapPin },
     { id: "rides", label: "Rides", icon: TrendingUp },
-    { id: "vehicle", label: "Vehicle", icon: Wrench },
+    { id: "profile", label: "Profile", icon: User },
   ];
 
   return (
@@ -66,10 +65,10 @@ export default function Header({
             className="
               cursor-pointer
               rounded-2xl
-              bg-gradient-to-br from-indigo-500 to-indigo-600
+              bg-gradient-to-br from-red-600 via-red-600 to-red-800
               p-2 sm:p-2.5
               flex items-center justify-center
-              shadow-[0_4px_10px_rgba(79,70,229,0.3),inset_0_1px_2px_rgba(255,255,255,0.6)]
+              shadow-[0_4px_12px_rgba(220,38,38,0.5),inset_0_2px_4px_rgba(255,255,255,0.4)]
               active:scale-95 transition-transform
             "
           >
@@ -82,9 +81,8 @@ export default function Header({
                 onClick={() => onNavigate("overview")}
                 className="
                   cursor-pointer
-                  text-base sm:text-xl font-extrabold tracking-tight
-                  bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-800
-                  bg-clip-text text-transparent truncate
+                  text-base sm:text-xl font-black tracking-tight
+                  text-white truncate
                 "
               >
                 OBEN RORR
@@ -92,21 +90,21 @@ export default function Header({
 
               <span
                 className="
-                  hidden sm:inline-flex items-center px-2 py-0.5
-                  rounded-full text-[10px] font-mono font-bold
-                  bg-indigo-50 text-indigo-700 border border-indigo-200/70
-                  shadow-[inset_0_1px_2px_rgba(255,255,255,0.8)]
+                  inline-flex items-center px-2 py-0.5
+                  rounded-full text-[9px] font-mono font-bold
+                  bg-red-500/20 text-red-400 border border-red-500/30
+                  shadow-xs
                 "
               >
-                EV-X
+                RED EDITION
               </span>
             </div>
 
             <div className="flex items-center gap-1.5">
-              <span className="hidden xs:inline text-[9px] font-mono text-slate-400 uppercase tracking-widest">
+              <span className="hidden xs:inline text-[9px] font-mono text-slate-500 uppercase tracking-widest">
                 VIN:
               </span>
-              <span className="truncate max-w-[110px] sm:max-w-[160px] text-[9px] font-mono font-semibold text-slate-600">
+              <span className="truncate max-w-[110px] sm:max-w-[170px] text-[9px] font-mono font-semibold text-slate-400">
                 {vehicle?.VIN || "AUTHENTICATING..."}
               </span>
             </div>
@@ -114,15 +112,15 @@ export default function Header({
         </div>
 
         {/* =================================================
-            DESKTOP NAVIGATION (Hidden on mobile, uses dock)
+            DESKTOP NAVIGATION (DUAL-TONE CLAY PILLS)
         ================================================= */}
         <nav
           aria-label="Main Navigation"
           className="
             hidden md:flex items-center
             p-1 rounded-2xl
-            bg-slate-100/80 border border-slate-200/70
-            shadow-[inset_0_2px_4px_rgba(0,0,0,0.04)]
+            bg-black/50 border border-white/5
+            shadow-inner
           "
         >
           {navLinks.map((tab) => {
@@ -139,12 +137,12 @@ export default function Header({
                   text-xs font-bold tracking-tight transition-all duration-200
                   ${
                     isActive
-                      ? "bg-white text-indigo-600 shadow-[0_4px_12px_rgba(99,102,241,0.18),inset_0_1px_2px_rgba(255,255,255,1)] scale-[1.02]"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+                      ? "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-[0_4px_12px_rgba(220,38,38,0.4),inset_0_1px_2px_rgba(255,255,255,0.4)] scale-[1.02]"
+                      : "text-slate-400 hover:text-white hover:bg-white/5"
                   }
                 `}
               >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? "text-indigo-600" : "text-slate-500"}`} />
+                <Icon className={`w-3.5 h-3.5 ${isActive ? "text-white" : "text-slate-400"}`} />
                 <span>{tab.label}</span>
               </button>
             );
@@ -159,20 +157,19 @@ export default function Header({
           <button
             type="button"
             onClick={onToggleTheme}
-            title={theme === "pastel" ? "Switch to Twilight Clay" : "Switch to Pastel Clay"}
+            title={theme === "dark" ? "Switch to Red & Porcelain" : "Switch to Red & Black"}
             className="
               clay-button
               p-2 rounded-2xl
-              bg-white/80 border border-white
-              text-slate-600 hover:text-indigo-600
-              shadow-[0_4px_10px_rgba(100,116,139,0.1),inset_0_1px_2px_rgba(255,255,255,0.9)]
+              bg-black/40 border border-white/10
+              text-slate-300 hover:text-red-400
               active:scale-95 transition-all
             "
           >
-            {theme === "pastel" ? (
-              <Sun className="h-4 w-4 text-amber-500" />
+            {theme === "dark" ? (
+              <Moon className="h-4 w-4 text-red-400" />
             ) : (
-              <Moon className="h-4 w-4 text-indigo-400" />
+              <Sun className="h-4 w-4 text-amber-500" />
             )}
           </button>
 
@@ -181,12 +178,11 @@ export default function Header({
             className={`
               flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-2xl
               border text-[9px] sm:text-[10px] font-bold tracking-wider uppercase
-              shadow-[0_2px_6px_rgba(0,0,0,0.04),inset_0_1px_2px_rgba(255,255,255,0.8)]
               transition-colors duration-300
               ${
                 connected
-                  ? "bg-emerald-50 border-emerald-200/80 text-emerald-700"
-                  : "bg-amber-50 border-amber-200/80 text-amber-700"
+                  ? "bg-emerald-950/40 border-emerald-500/30 text-emerald-400"
+                  : "bg-red-950/40 border-red-500/30 text-red-400"
               }
             `}
           >
@@ -194,13 +190,13 @@ export default function Header({
               <span
                 className={`
                   animate-ping absolute inline-flex h-full w-full rounded-full opacity-75
-                  ${connected ? "bg-emerald-400" : "bg-amber-400"}
+                  ${connected ? "bg-emerald-400" : "bg-red-400"}
                 `}
               />
               <span
                 className={`
                   relative inline-flex rounded-full h-2 w-2
-                  ${connected ? "bg-emerald-500" : "bg-amber-500"}
+                  ${connected ? "bg-emerald-500" : "bg-red-500"}
                 `}
               />
             </span>
@@ -212,25 +208,25 @@ export default function Header({
           {/* PROFILE BUTTON */}
           <button
             type="button"
-            onClick={() => {
-              if (onProfileClick) onProfileClick();
-              else onNavigate("vehicle");
-            }}
-            className="
+            onClick={() => onNavigate("profile")}
+            className={`
               clay-button
               rounded-2xl
-              bg-indigo-50 border border-indigo-200/80
               px-2.5 sm:px-3 py-1.5
               flex items-center gap-1.5
-              text-indigo-700 font-bold
-              shadow-[0_4px_10px_rgba(99,102,241,0.1),inset_0_1px_2px_rgba(255,255,255,0.9)]
+              font-bold text-xs
               active:scale-95 transition-all
-            "
+              ${
+                activePage === "profile"
+                  ? "bg-red-600 text-white border border-red-500 shadow-[0_4px_12px_rgba(220,38,38,0.4)]"
+                  : "bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20"
+              }
+            `}
           >
-            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-500 text-white shadow-xs">
+            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white shadow-xs">
               <User className="h-3 w-3" />
             </div>
-            <span className="hidden sm:inline text-xs truncate max-w-[80px]">
+            <span className="hidden sm:inline truncate max-w-[80px]">
               {firstName}
             </span>
           </button>
@@ -243,11 +239,10 @@ export default function Header({
             className="
               clay-button
               rounded-2xl
-              bg-rose-50 border border-rose-200/80
+              bg-black/40 border border-white/10
               p-2 sm:px-2.5 sm:py-1.5
               flex items-center gap-1.5
-              text-rose-600 font-bold
-              shadow-[0_4px_10px_rgba(244,63,94,0.1),inset_0_1px_2px_rgba(255,255,255,0.9)]
+              text-slate-400 hover:text-red-400 hover:border-red-500/40
               active:scale-95 transition-all
             "
           >
