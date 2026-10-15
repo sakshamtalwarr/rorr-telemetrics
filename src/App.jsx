@@ -908,25 +908,9 @@ export default function App() {
   // ===================================================
 
   return (
-    <div
-      className="
-        rorr-app-background
-      "
-    >
-
-      <div
-        className="
-          rorr-app-content
-        "
-      >
-
-        <Dashboard
-          profile={profile}
-          onLogout={handleLogout}
-        />
-
-      </div>
-
-    </div>
+    <Dashboard
+      profile={profile}
+      onLogout={handleLogout}
+    />
   );
 }

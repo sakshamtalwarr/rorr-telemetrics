@@ -1,44 +1,54 @@
+/**
+ * Claymorphic Card component with soft 3D bevels, dual shadows,
+ * and pastel theme support. Drops directly into existing components
+ * without breaking signatures.
+ */
 export default function GlassCard({
   children,
   className = "",
   hover = true,
+  variant = "default", // 'default' (cloud white), 'lavender', 'mint', 'peach', 'sky', 'butter'
 }) {
+  const variantClasses = {
+    default: "clay-card-default",
+    lavender: "clay-card-lavender",
+    mint: "clay-card-mint",
+    peach: "clay-card-peach",
+    sky: "clay-card-sky",
+    butter: "clay-card-butter",
+    plain: "clay-card-plain",
+  };
+
+  const selectedVariant = variantClasses[variant] || variantClasses.default;
 
   return (
     <div
       className={`
-        relative overflow-hidden rounded-3xl
-        bg-white/5 backdrop-blur-xl
-        border border-white/10
-        shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_8px_32px_rgba(0,0,0,0.4)]
+        clay-card
+        relative overflow-hidden
+        rounded-3xl
+        transition-all duration-300 ease-out
+        ${selectedVariant}
         ${
           hover
-            ? "hover:bg-white/10 hover:border-white/20 hover:-translate-y-1.5 hover:shadow-[0_15px_40px_rgba(0,0,0,0.6)]"
+            ? "hover:-translate-y-1 hover:shadow-[0_20px_35px_-8px_rgba(100,116,139,0.18),0_8px_16px_-4px_rgba(100,116,139,0.1)]"
             : ""
         }
-        transition-all duration-500 ease-out
         ${className}
       `}
     >
-
+      {/* Soft clay top specular glaze */}
       <div
         className="
-          absolute inset-0
-          bg-gradient-to-br
-          from-white/5
-          to-transparent
-          opacity-0
-          hover:opacity-100
-          transition-opacity
-          duration-500
-          pointer-events-none
+          absolute inset-x-0 top-0 h-10
+          bg-gradient-to-b from-white/60 to-transparent
+          pointer-events-none rounded-t-3xl opacity-80
         "
       />
 
       <div className="relative z-10 h-full w-full">
         {children}
       </div>
-
     </div>
   );
 }

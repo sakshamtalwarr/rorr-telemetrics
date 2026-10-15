@@ -10,7 +10,7 @@
    ==================================================== */
 
 html {
-    background: #050505;
+    background: #F4F6FC;
 }
 
 body {
@@ -18,10 +18,12 @@ body {
     min-width: 320px;
     min-height: 100vh;
 
-    background: #050505;
-    color: #f8fafc;
+    background: #F4F6FC;
+    color: #0F172A;
 
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 
@@ -1025,73 +1027,252 @@ textarea {
 }
 
 /* =====================================================
-   DARK MODE SUPPORT
+/* =====================================================
+   CLAYMORPHISM & PASTEL DESIGN SYSTEM
    ===================================================== */
 
-@media (prefers-color-scheme: dark) {
-
-    html {
-
-        background: #0a0a0f !important;
-
-    }
-
-    body {
-
-        background: #0a0a0f !important;
-
-        color: #e8eaed !important;
-
-    }
-
-    .dark-bg {
-
-        background: #0f0f1a !important;
-
-    }
-
-    .card-dark {
-
-        background: rgba(15, 15, 25, 0.8) !important;
-
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-
-    }
-
-    .text-dark {
-
-        color: #d0d5dd !important;
-
-    }
-
-    .border-dark {
-
-        border-color: rgba(255, 255, 255, 0.08) !important;
-
-    }
-
+/* --- AMBIENT GLOWS --- */
+.clay-ambient-glows {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
 }
 
-/* =====================================================
-   LIGHT MODE OVERRIDE
-   ===================================================== */
+.clay-pastel-theme .clay-ambient-glows::before {
+    content: "";
+    position: absolute;
+    width: 650px;
+    height: 650px;
+    top: -150px;
+    left: -150px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(199, 210, 254, 0.45) 0%, rgba(224, 231, 255, 0.2) 40%, transparent 70%);
+    filter: blur(40px);
+    animation: rorrAmbientMove 16s ease-in-out infinite;
+}
 
-@media (prefers-color-scheme: light) {
+.clay-pastel-theme .clay-ambient-glows::after {
+    content: "";
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    right: -150px;
+    bottom: -150px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(167, 243, 208, 0.4) 0%, rgba(209, 250, 229, 0.18) 40%, transparent 70%);
+    filter: blur(40px);
+    animation: rorrAmbientMove2 18s ease-in-out infinite;
+}
 
-    html {
+/* --- THEMES --- */
+.clay-pastel-theme {
+    background-color: #F4F6FC;
+    background-image:
+        radial-gradient(at 0% 0%, rgba(224, 231, 255, 0.7) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(254, 226, 226, 0.6) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(209, 250, 229, 0.6) 0px, transparent 50%),
+        radial-gradient(at 0% 100%, rgba(224, 242, 254, 0.7) 0px, transparent 50%);
+    color: #0F172A;
+}
 
-        background: #f8fafc !important;
+.clay-dark-theme {
+    background-color: #090D16;
+    background-image:
+        radial-gradient(at 0% 0%, rgba(49, 46, 129, 0.25) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(6, 78, 59, 0.2) 0px, transparent 50%);
+    color: #F8FAFC;
+}
 
-    }
+/* --- CLAY FLOATING HEADER --- */
+.clay-pastel-theme .clay-header {
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1.5px solid rgba(255, 255, 255, 0.95);
+    box-shadow:
+        0 14px 30px -6px rgba(100, 116, 139, 0.14),
+        0 4px 10px -2px rgba(100, 116, 139, 0.08),
+        inset 0 2px 4px rgba(255, 255, 255, 0.95),
+        inset 0 -2px 4px rgba(148, 163, 184, 0.06);
+}
 
-    body {
+.clay-dark-theme .clay-header {
+    background: rgba(17, 24, 39, 0.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    box-shadow:
+        0 16px 32px -6px rgba(0, 0, 0, 0.5),
+        inset 0 1px 2px rgba(255, 255, 255, 0.15);
+}
 
-        background: #f8fafc !important;
+/* --- CLAY FLOATING DOCK (MOBILE) --- */
+.clay-pastel-theme .clay-dock {
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1.5px solid rgba(255, 255, 255, 0.95);
+    box-shadow:
+        0 20px 40px -6px rgba(100, 116, 139, 0.25),
+        0 6px 14px -2px rgba(100, 116, 139, 0.12),
+        inset 0 2.5px 5px rgba(255, 255, 255, 1),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.04);
+}
 
-        color: #0f172a !important;
+.clay-dark-theme .clay-dock {
+    background: rgba(17, 24, 39, 0.92);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    box-shadow:
+        0 20px 40px -6px rgba(0, 0, 0, 0.7),
+        inset 0 1px 2px rgba(255, 255, 255, 0.15);
+}
 
-    }
+/* --- CLAY CARDS --- */
+.clay-card {
+    border-radius: 1.75rem;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
 
+/* Pastel Card Variations */
+.clay-pastel-theme .clay-card-default {
+    background: #FFFFFF;
+    border: 1.5px solid rgba(255, 255, 255, 0.9);
+    box-shadow:
+        0 14px 28px -4px rgba(100, 116, 139, 0.12),
+        0 4px 10px -2px rgba(100, 116, 139, 0.06),
+        inset 0 2.5px 5px rgba(255, 255, 255, 1),
+        inset 0 -2.5px 5px rgba(148, 163, 184, 0.08);
+}
+
+.clay-pastel-theme .clay-card-sky {
+    background: linear-gradient(145deg, #F0F9FF 0%, #E0F2FE 100%);
+    border: 1.5px solid rgba(186, 230, 253, 0.9);
+    box-shadow:
+        0 14px 28px -4px rgba(14, 165, 233, 0.15),
+        0 4px 10px -2px rgba(14, 165, 233, 0.06),
+        inset 0 2.5px 5px rgba(255, 255, 255, 1),
+        inset 0 -2.5px 5px rgba(14, 165, 233, 0.1);
+}
+
+.clay-pastel-theme .clay-card-mint {
+    background: linear-gradient(145deg, #F0FDF4 0%, #DCFCE7 100%);
+    border: 1.5px solid rgba(187, 247, 208, 0.9);
+    box-shadow:
+        0 14px 28px -4px rgba(16, 185, 129, 0.15),
+        0 4px 10px -2px rgba(16, 185, 129, 0.06),
+        inset 0 2.5px 5px rgba(255, 255, 255, 1),
+        inset 0 -2.5px 5px rgba(16, 185, 129, 0.1);
+}
+
+.clay-pastel-theme .clay-card-lavender {
+    background: linear-gradient(145deg, #EEF2FF 0%, #E0E7FF 100%);
+    border: 1.5px solid rgba(199, 210, 254, 0.9);
+    box-shadow:
+        0 14px 28px -4px rgba(99, 102, 241, 0.15),
+        0 4px 10px -2px rgba(99, 102, 241, 0.06),
+        inset 0 2.5px 5px rgba(255, 255, 255, 1),
+        inset 0 -2.5px 5px rgba(99, 102, 241, 0.1);
+}
+
+.clay-pastel-theme .clay-card-peach {
+    background: linear-gradient(145deg, #FFF1F2 0%, #FFE4E6 100%);
+    border: 1.5px solid rgba(254, 205, 211, 0.9);
+    box-shadow:
+        0 14px 28px -4px rgba(244, 63, 94, 0.15),
+        0 4px 10px -2px rgba(244, 63, 94, 0.06),
+        inset 0 2.5px 5px rgba(255, 255, 255, 1),
+        inset 0 -2.5px 5px rgba(244, 63, 94, 0.1);
+}
+
+.clay-pastel-theme .clay-card-butter {
+    background: linear-gradient(145deg, #FEFCE8 0%, #FEF3C7 100%);
+    border: 1.5px solid rgba(253, 230, 138, 0.9);
+    box-shadow:
+        0 14px 28px -4px rgba(245, 158, 11, 0.15),
+        0 4px 10px -2px rgba(245, 158, 11, 0.06),
+        inset 0 2.5px 5px rgba(255, 255, 255, 1),
+        inset 0 -2.5px 5px rgba(245, 158, 11, 0.1);
+}
+
+/* Dark Card Variations */
+.clay-dark-theme .clay-card {
+    background: #111827;
+    border: 1.5px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+        0 14px 28px -4px rgba(0, 0, 0, 0.6),
+        inset 0 1px 2px rgba(255, 255, 255, 0.12),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* --- CLAY BUTTONS --- */
+.clay-button {
+    border-radius: 1.25rem;
+    box-shadow:
+        0 4px 12px -2px rgba(100, 116, 139, 0.15),
+        inset 0 1.5px 3px rgba(255, 255, 255, 0.9),
+        inset 0 -1.5px 3px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.clay-button:active {
+    transform: scale(0.96);
+    box-shadow:
+        0 1px 4px -1px rgba(100, 116, 139, 0.1),
+        inset 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* --- PASTEL THEME CONTENT ADAPTATION --- */
+/* Ensures high contrast & legibility across all components in pastel mode */
+.clay-pastel-theme .text-slate-100,
+.clay-pastel-theme .text-slate-200 {
+    color: #0F172A;
+}
+
+.clay-pastel-theme .text-slate-300,
+.clay-pastel-theme .text-slate-400 {
+    color: #475569;
+}
+
+.clay-pastel-theme .text-slate-500 {
+    color: #64748B;
+}
+
+.clay-pastel-theme .bg-black\/40,
+.clay-pastel-theme .bg-black\/30,
+.clay-pastel-theme .bg-black\/25,
+.clay-pastel-theme .bg-black\/20 {
+    background-color: rgba(255, 255, 255, 0.85);
+    border-color: rgba(226, 232, 240, 0.9);
+    box-shadow:
+        inset 0 1.5px 3px rgba(0, 0, 0, 0.03),
+        inset 0 -1px 2px rgba(255, 255, 255, 0.9);
+}
+
+.clay-pastel-theme .border-white\/5,
+.clay-pastel-theme .border-white\/10 {
+    border-color: rgba(226, 232, 240, 0.85);
+}
+
+.clay-pastel-theme .border-b-white\/5,
+.clay-pastel-theme .border-b-white\/10 {
+    border-bottom-color: rgba(226, 232, 240, 0.85);
+}
+
+/* Custom scrollbar for pastel theme */
+.clay-pastel-theme .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.clay-pastel-theme .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.35);
+}
+
+.clay-pastel-theme .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.55);
 }
 
 /* =====================================================
@@ -1138,159 +1319,6 @@ textarea {
 
     *,
     *::before,
-    *::after {
-
-        animation-duration: 0.01ms !important;
-
-        animation-iteration-count: 1 !important;
-
-        transition-duration: 0.01ms !important;
-
-        scroll-behavior: auto !important;
-
-    }
-
-}
-
-
-/* =====================================================
-   FLOATING DOCK (MOBILE NAVIGATION)
-   ===================================================== */
-
-@media (max-width: 768px) {
-
-    .floating-dock {
-
-        position: fixed;
-
-        bottom: 0;
-
-        left: 0;
-
-        right: 0;
-
-        z-index: 1000;
-
-        background: #050505;
-
-        border-top: 1px solid rgba(255, 255, 255, 0.08);
-
-        padding: 0.75rem;
-
-        backdrop-filter: blur(20px);
-
-        -webkit-backdrop-filter: blur(20px);
-
-        display: flex;
-
-        justify-content: space-around;
-
-        align-items: center;
-
-        box-shadow:
-
-            0 -4px 20px rgba(0, 0, 0, 0.4);
-
-        transition:
-
-            background-color 0.3s ease;
-
-    }
-
-    .floating-dock:hover {
-
-        background: #0a0a0f;
-
-    }
-
-    .dock-link {
-
-        color: #cbd5e0;
-
-        font-size: 0.875rem;
-
-        font-weight: 500;
-
-        text-decoration: none;
-
-        display: flex;
-
-        flex-direction: column;
-
-        align-items: center;
-
-        gap: 0.25rem;
-
-        padding: 0.5rem;
-
-        border-radius: 0.875rem;
-
-        transition:
-
-            color 0.3s ease;
-
-            background: rgba(255, 255, 255, 0.04);
-
-    }
-
-    .dock-link:hover {
-
-        color: #f472b6;
-
-        background: rgba(255, 255, 255, 0.06);
-
-    }
-
-    .dock-link .icon {
-
-        width: 24px;
-
-        height: 24px;
-
-    }
-
-    .dock-label {
-
-        display: none;
-
-        font-size: 0.7rem;
-
-        white-space: nowrap;
-
-    }
-
-    @media (min-width: 640px) {
-
-        .dock-label {
-
-            display: inline;
-
-        }
-
-    }
-
-}
-
-/* =====================================================
-   SCROLL BEHAVIOR
-   ===================================================== */
-
-html {
-
-    scroll-behavior: smooth;
-
-}
-
-/* =====================================================
-   REDUCED MOTION ACCESSIBILITY
-   ===================================================== */
-
-@media (prefers-reduced-motion: reduce) {
-
-    *,
-
-    *::before,
-
     *::after {
 
         animation-duration: 0.01ms !important;
