@@ -363,6 +363,50 @@ export default function Dashboard({ profile, onLogout }) {
         ========================================================= */}
         {activePage === "overview" && (
           <div className="space-y-4 sm:space-y-6 fade-in-scale">
+            {/* Homescreen Hero Brand Banner with Login Logo */}
+            <div className="clay-card p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-[#12141C] via-[#1A0C10] to-[#12141C] border border-red-500/25">
+              <div className="flex items-center gap-3.5">
+                <div className="p-2 sm:p-2.5 rounded-2xl bg-black/60 border border-red-500/30 shadow-inner flex items-center justify-center">
+                  <img
+                    src="/rorr-logo.png"
+                    alt="RORR Logo"
+                    className="h-7 sm:h-9 w-auto object-contain drop-shadow-[0_0_12px_rgba(220,38,38,0.7)]"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base sm:text-lg font-black tracking-tight text-white">
+                      OBEN RORR
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full bg-red-600/30 border border-red-500/40 text-[9px] font-bold text-red-300 uppercase">
+                      Volcanic Red
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    High-Performance Electric Telematics Cockpit
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/40 border border-red-500/20 text-xs font-mono text-slate-300">
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                  <span>HAVOC READY</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigateTo("profile")}
+                  className="px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1 active:scale-95"
+                >
+                  <span>My Bike</span>
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
             {/* Top Metric Cards - Dualtone Red & Black */}
             <section
               className="

@@ -65,14 +65,21 @@ export default function Header({
             className="
               cursor-pointer
               rounded-2xl
-              bg-gradient-to-br from-red-600 via-red-600 to-red-800
-              p-2 sm:p-2.5
+              bg-[#13151D] border border-red-500/30
+              px-2.5 py-1.5 sm:px-3 sm:py-1.5
               flex items-center justify-center
-              shadow-[0_4px_12px_rgba(220,38,38,0.5),inset_0_2px_4px_rgba(255,255,255,0.4)]
+              shadow-[0_4px_12px_rgba(220,38,38,0.35),inset_0_1px_2px_rgba(255,255,255,0.2)]
               active:scale-95 transition-transform
             "
           >
-            <Bike className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+            <img
+              src="/rorr-logo.png"
+              alt="Oben Rorr Logo"
+              className="h-6 sm:h-7 w-auto object-contain drop-shadow-[0_0_10px_rgba(220,38,38,0.6)]"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
           </div>
 
           <div className="min-w-0">

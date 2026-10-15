@@ -47,10 +47,23 @@ export default function Profile({
         <div className="absolute -left-8 -bottom-8 w-64 h-64 rounded-full bg-black/40 blur-2xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-red-400/30 text-red-200 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
-              <span className="w-2 h-2 rounded-full bg-red-400 animate-ping" />
-              <span>Volcanic Red Edition</span>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-2xl bg-black/40 border border-red-500/30 shadow-inner backdrop-blur-md">
+                <img
+                  src="/rorr-logo.png"
+                  alt="OBEN RORR Logo"
+                  className="h-7 sm:h-8 w-auto object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+              </div>
+
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-red-400/30 text-red-200 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
+                <span className="w-2 h-2 rounded-full bg-red-400 animate-ping" />
+                <span>Volcanic Red Edition</span>
+              </div>
             </div>
 
             <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white drop-shadow-md">
