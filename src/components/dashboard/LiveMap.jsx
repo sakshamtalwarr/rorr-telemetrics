@@ -379,7 +379,7 @@ useEffect(() => {
     // TILE EVENTS
     // =================================================
 
-    streetLayer.on(
+    osmDarkLayer.on(
       "load",
       () => {
 
@@ -391,7 +391,7 @@ useEffect(() => {
     );
 
 
-    streetLayer.on(
+    osmDarkLayer.on(
       "tileerror",
       (event) => {
 
