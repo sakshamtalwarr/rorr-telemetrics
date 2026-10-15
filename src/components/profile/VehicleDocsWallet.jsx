@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   FileText,
   Upload,
@@ -102,6 +103,30 @@ export default function VehicleDocsWallet() {
       cancelled = true;
     };
   }, []);
+
+  // Lock body scroll when any modal is open to keep view locked on modal
+  useEffect(() => {
+    const isAnyModalOpen =
+      isUploadModalOpen ||
+      isRcModalOpen ||
+      isInsuranceModalOpen ||
+      isWarrantyModalOpen ||
+      !!previewDoc;
+
+    if (isAnyModalOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [
+    isUploadModalOpen,
+    isRcModalOpen,
+    isInsuranceModalOpen,
+    isWarrantyModalOpen,
+    previewDoc,
+  ]);
 
   // Process incoming file (from input change or drag & drop)
   const handleFileProcess = async (file) => {
@@ -846,546 +871,581 @@ export default function VehicleDocsWallet() {
       )}
 
       {/* =========================================================
-          UPLOAD DOCUMENT MODAL
+          UPLOAD DOCUMENT MODAL (PORTALED DIRECTLY TO BODY)
       ========================================================= */}
-      {isUploadModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-lg clay-card-carbon rounded-3xl p-6 border border-red-500/30 shadow-2xl space-y-5">
-            <div className="flex items-center justify-between pb-4 border-b border-white/10">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-red-500/20 text-red-400">
-                  <Upload className="w-5 h-5" />
+      {isUploadModalOpen &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto animate-fade-in"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setIsUploadModalOpen(false);
+            }}
+          >
+            <div className="w-full max-w-lg clay-card-carbon rounded-3xl p-6 border border-red-500/30 shadow-2xl space-y-5 my-auto max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between pb-4 border-b border-white/10">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-red-500/20 text-red-400">
+                    <Upload className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-white text-base">Upload Vehicle Document</h3>
+                    <p className="text-xs text-slate-400">Add DL, RC scan, bills, or warranty endorsements</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-black text-white text-base">Upload Vehicle Document</h3>
-                  <p className="text-xs text-slate-400">Add DL, RC scan, bills, or warranty endorsements</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsUploadModalOpen(false)}
-                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleUploadSubmit} className="space-y-4">
-              {/* Document Category */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Document Category
-                </label>
-                <select
-                  value={docCategory}
-                  onChange={(e) => setDocCategory(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-2xl bg-black/50 border border-white/10 text-white text-xs focus:border-red-500 outline-none"
-                >
-                  <option value="Driving License (DL)">Driving License (DL)</option>
-                  <option value="Registration Certificate (RC Scan)">Registration Certificate (RC Scan)</option>
-                  <option value="Vehicle Insurance Copy">Vehicle Insurance Copy</option>
-                  <option value="Pollution / Green Pass (PUC)">Pollution / Green Pass (PUC)</option>
-                  <option value="Service / Maintenance Bill">Service / Maintenance Bill</option>
-                  <option value="Roadside Assistance (RSA)">Roadside Assistance (RSA)</option>
-                  <option value="Warranty Endorsement">Warranty Endorsement</option>
-                  <option value="Other Document">Other Document</option>
-                </select>
-              </div>
-
-              {/* Document Title */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Document Name / Title
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Saksham DL Front & Back or Oben 1st Service"
-                  value={docName}
-                  onChange={(e) => setDocName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-2xl bg-black/50 border border-white/10 text-white text-xs focus:border-red-500 outline-none"
-                  required
-                />
-              </div>
-
-              {/* Expiry Date (Optional) */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Validity / Expiry Date (Optional)
-                </label>
-                <input
-                  type="date"
-                  value={docExpiry}
-                  onChange={(e) => setDocExpiry(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-2xl bg-black/50 border border-white/10 text-white text-xs focus:border-red-500 outline-none"
-                />
-              </div>
-
-              {/* File Dropzone with Standard Accessible Label */}
-              <div>
-                <span className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Choose File (Image or PDF)
-                </span>
-
-                <input
-                  id="wallet-doc-file-input"
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleInputChange}
-                  accept="image/*,application/pdf,.pdf,.jpg,.jpeg,.png,.webp"
-                  className="sr-only"
-                />
-
-                <label
-                  htmlFor="wallet-doc-file-input"
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  className={`
-                    block p-6 rounded-2xl border-2 border-dashed
-                    cursor-pointer transition-all text-center
-                    ${
-                      isDragging
-                        ? "border-red-400 bg-red-950/40 scale-[1.01]"
-                        : fileName
-                        ? "border-emerald-500/50 bg-black/40"
-                        : "border-red-500/30 hover:border-red-500/70 bg-black/30"
-                    }
-                  `}
-                >
-                  {isProcessingFile ? (
-                    <div className="py-2 space-y-2">
-                      <Loader2 className="w-8 h-8 text-red-400 mx-auto animate-spin" />
-                      <p className="text-xs font-bold text-white">Compressing & preparing file...</p>
-                    </div>
-                  ) : fileName ? (
-                    <div className="py-1 space-y-1">
-                      <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center">
-                        <Check className="w-5 h-5" />
-                      </div>
-                      <p className="text-xs font-bold text-white truncate max-w-xs mx-auto">{fileName}</p>
-                      <p className="text-[10px] text-emerald-400 font-mono">
-                        {formatBytes(fileSize)} • Optimized & Ready
-                      </p>
-                      <p className="text-[10px] text-slate-400 underline pt-1">Click to replace file</p>
-                    </div>
-                  ) : (
-                    <div className="py-1 space-y-1">
-                      <Upload className="w-8 h-8 text-red-400 mx-auto mb-1.5" />
-                      <p className="text-xs font-bold text-white">Click to browse or take photo / drag & drop</p>
-                      <p className="text-[10px] text-slate-400">
-                        Supports photos (camera/gallery) and PDFs. Auto-compressed for instant speed.
-                      </p>
-                    </div>
-                  )}
-                </label>
-              </div>
-
-              {uploadError && (
-                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-400 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>{uploadError}</span>
-                </div>
-              )}
-
-              {uploadSuccess && (
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-400 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                  <span>Document saved successfully to your wallet!</span>
-                </div>
-              )}
-
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
                 <button
                   type="button"
                   onClick={() => setIsUploadModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl bg-white/5 text-slate-300 hover:text-white text-xs font-bold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={!fileData || isSaving || isProcessingFile}
-                  className="
-                    px-5 py-2.5 rounded-xl
-                    clay-button-primary
-                    text-white text-xs font-bold uppercase tracking-wider
-                    disabled:opacity-50 disabled:cursor-not-allowed
-                    flex items-center gap-1.5
-                  "
-                >
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Saving...</span>
-                    </>
-                  ) : (
-                    <span>Save to Wallet</span>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* =========================================================
-          FULL DIGITAL RC SMART CARD MODAL (VAHAN FORMAT)
-      ========================================================= */}
-      {isRcModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-2xl clay-card-hero-red rounded-3xl p-6 sm:p-8 border border-red-400/40 shadow-2xl relative space-y-6 max-h-[90vh] overflow-y-auto">
-            {/* Header */}
-            <div className="flex items-start justify-between pb-4 border-b border-white/15">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-1 rounded-lg bg-black/40 border border-red-400/30 text-[10px] font-mono font-bold text-red-200">
-                    GOVERNMENT OF NCT OF DELHI
-                  </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-black/40 border border-red-400/30 text-[10px] font-mono font-bold text-emerald-300">
-                    TRANSPORT DEPARTMENT
-                  </span>
-                </div>
-                <h3 className="text-xl font-black text-white tracking-tight mt-1">
-                  CERTIFICATE OF REGISTRATION (SMART CARD RC)
-                </h3>
-                <p className="text-xs text-red-100/80">FORM 23A • Motor Vehicles Act, 1988</p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsRcModalOpen(false)}
-                className="p-2 rounded-xl text-white/70 hover:text-white bg-black/40 hover:bg-black/60 border border-white/10"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Smart Card Visual Representation */}
-            <div className="p-6 rounded-3xl bg-black/60 border border-red-400/30 shadow-inner backdrop-blur-md space-y-6">
-              {/* Top Row: Chip + Plate + Status */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  {/* Gold SIM / Smart Card Chip Icon */}
-                  <div className="w-12 h-10 rounded-lg bg-gradient-to-br from-amber-300 via-amber-400 to-amber-600 p-0.5 shadow-md flex items-center justify-center">
-                    <div className="w-full h-full rounded border border-amber-800/40 grid grid-cols-2 grid-rows-3 gap-0.5 p-1 bg-amber-400/60">
-                      <div className="border-r border-b border-amber-900/30" />
-                      <div className="border-b border-amber-900/30" />
-                      <div className="border-r border-b border-amber-900/30" />
-                      <div className="border-b border-amber-900/30" />
-                      <div className="border-r border-amber-900/30" />
-                      <div />
-                    </div>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-mono uppercase text-slate-400">Smart Card ID</span>
-                    <p className="text-xs font-mono font-bold text-white">DL-8-2024-EV002219</p>
-                  </div>
-                </div>
-
-                <div className="px-4 py-2 rounded-2xl bg-gradient-to-r from-red-600 to-red-800 border border-red-400/50 shadow-lg text-center">
-                  <span className="text-[9px] font-mono font-bold text-white/80 block uppercase">Registration Mark</span>
-                  <span className="text-2xl font-black font-mono tracking-widest text-white">
-                    {OFFICIAL_BIKE_RC.rc_regn_no}
-                  </span>
-                </div>
-              </div>
-
-              {/* Data Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
-                  <span className="text-[10px] uppercase font-mono text-slate-400">Registered Owner</span>
-                  <p className="text-sm font-black text-white">{OFFICIAL_BIKE_RC.rc_owner_name}</p>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
-                  <span className="text-[10px] uppercase font-mono text-slate-400">Registration Date</span>
-                  <p className="text-sm font-black text-white">{OFFICIAL_BIKE_RC.rc_regn_dt}</p>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
-                  <span className="text-[10px] uppercase font-mono text-slate-400">Chassis Number (VIN)</span>
-                  <p className="text-sm font-mono font-bold text-red-300">{OFFICIAL_BIKE_RC.rc_chasi_no}</p>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
-                  <span className="text-[10px] uppercase font-mono text-slate-400">Motor Number</span>
-                  <p className="text-sm font-mono font-bold text-red-300">{OFFICIAL_BIKE_RC.rc_eng_no}</p>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
-                  <span className="text-[10px] uppercase font-mono text-slate-400">Maker & Model</span>
-                  <p className="text-xs font-bold text-white">{OFFICIAL_BIKE_RC.rc_maker_desc}</p>
-                  <p className="text-xs text-red-300 font-bold">MODEL: {OFFICIAL_BIKE_RC.rc_maker_model} (ELECTRIC RED)</p>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
-                  <span className="text-[10px] uppercase font-mono text-slate-400">Powertrain Specs</span>
-                  <p className="text-xs font-bold text-white">{OFFICIAL_BIKE_RC.motor_kw} Motor • {OFFICIAL_BIKE_RC.battery_kwh} Battery</p>
-                  <p className="text-xs text-emerald-400 font-mono">BOV Electric • Class 2WN</p>
-                </div>
-
-                <div className="sm:col-span-2 p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
-                  <span className="text-[10px] uppercase font-mono text-slate-400">Registered Address</span>
-                  <p className="text-xs font-medium text-slate-200">{OFFICIAL_BIKE_RC.rc_present_address}</p>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
-                  <span className="text-[10px] uppercase font-mono text-slate-400">Registering Authority (RTO)</span>
-                  <p className="text-xs font-bold text-white">{OFFICIAL_BIKE_RC.rc_registered_at}</p>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
-                  <span className="text-[10px] uppercase font-mono text-slate-400">Tax & Status</span>
-                  <p className="text-xs font-bold text-emerald-400">Status: {OFFICIAL_BIKE_RC.rc_status} • Tax: {OFFICIAL_BIKE_RC.rc_tax_mode}</p>
-                </div>
-              </div>
-
-              {/* Bottom Vahan Seal */}
-              <div className="flex items-center justify-between pt-3 border-t border-white/10 text-[10px] text-slate-400">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span>Vahan National Register Database Verified</span>
-                </div>
-                <span className="font-mono text-slate-500">Mfg: {OFFICIAL_BIKE_RC.rc_manu_month_yr}</span>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="px-4 py-2.5 rounded-2xl bg-black/50 hover:bg-black/70 border border-white/10 text-white text-xs font-bold flex items-center gap-2"
-              >
-                <Printer className="w-4 h-4" />
-                <span>Print / Save PDF</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsRcModalOpen(false)}
-                className="px-5 py-2.5 rounded-2xl bg-white text-black text-xs font-bold uppercase tracking-wider"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* =========================================================
-          ICICI LOMBARD INSURANCE MODAL
-      ========================================================= */}
-      {isInsuranceModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-lg clay-card-wine rounded-3xl p-6 sm:p-7 border border-red-500/30 shadow-2xl relative space-y-5">
-            <div className="flex items-start justify-between pb-3 border-b border-white/10">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2.5 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-black text-white">ICICI Lombard Policy Details</h3>
-                  <p className="text-xs text-red-200/80">Comprehensive 2-Wheeler EV Protection</p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsInsuranceModalOpen(false)}
-                className="p-2 rounded-xl text-white/70 hover:text-white bg-black/30 hover:bg-black/50"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div className="p-3.5 rounded-2xl bg-black/40 border border-white/5 space-y-1">
-                <span className="text-[10px] uppercase font-mono text-slate-400">Policy Number</span>
-                <p className="text-base font-mono font-black text-emerald-300">{OFFICIAL_BIKE_RC.rc_insurance_policy_no}</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
-                  <span className="text-[10px] uppercase font-mono text-slate-400">Insurer</span>
-                  <p className="text-xs font-bold text-white">{OFFICIAL_BIKE_RC.rc_insurance_comp}</p>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
-                  <span className="text-[10px] uppercase font-mono text-slate-400">Validity Period</span>
-                  <p className="text-xs font-mono font-black text-emerald-400">Valid till {OFFICIAL_BIKE_RC.rc_insurance_upto}</p>
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-black/40 border border-white/5 space-y-2">
-                <span className="text-[10px] uppercase font-mono text-slate-400">Policy Scope</span>
-                <ul className="space-y-1.5 text-slate-200 text-xs">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-                    <span>Own Damage (OD) Cover for Oben Rorr Electric</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-                    <span>5-Year Mandatory Third-Party Liability Cover</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-                    <span>Electric Battery & Motor Hazard Protection</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
-              <button
-                type="button"
-                onClick={() => setIsInsuranceModalOpen(false)}
-                className="px-5 py-2.5 rounded-2xl bg-white text-black text-xs font-bold uppercase tracking-wider"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* =========================================================
-          OBEN 3-YEAR WARRANTY DETAILS MODAL
-      ========================================================= */}
-      {isWarrantyModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-lg clay-card-hero-red rounded-3xl p-6 sm:p-7 border border-red-500/30 shadow-2xl relative space-y-5">
-            <div className="flex items-start justify-between pb-3 border-b border-white/10">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2.5 rounded-2xl bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  <Sparkles className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-black text-white">Oben Rorr 3-Year Warranty</h3>
-                  <p className="text-xs text-red-200/80">Official Powertrain Coverage Breakdown</p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsWarrantyModalOpen(false)}
-                className="p-2 rounded-xl text-white/70 hover:text-white bg-black/30 hover:bg-black/50"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div className="p-3.5 rounded-2xl bg-black/40 border border-white/5 space-y-1">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] uppercase font-mono text-slate-400">Coverage Duration</span>
-                  <span className="text-[10px] font-bold text-amber-400">{warrantyDays} Days Left</span>
-                </div>
-                <p className="text-base font-black text-white">3 Years or 50,000 Kilometers</p>
-                <p className="text-[10px] text-red-200/80">Valid: 24-Sep-2024 to 23-Sep-2027</p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-black/40 border border-white/5 space-y-2">
-                <span className="text-[10px] uppercase font-mono text-slate-400">Protected Components</span>
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-bold text-white text-xs">8 kW Peak IPMSM Mid-Drive Motor</p>
-                      <p className="text-[10px] text-slate-300">Covers motor windings, rotor, shaft bearings, and controller drive circuitry.</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-bold text-white text-xs">4.4 kWh LFP High Thermal Safety Pack</p>
-                      <p className="text-[10px] text-slate-300">Guarantees state of health (SoH), cell internal resistance, and battery management system (BMS).</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-bold text-white text-xs">24x7 Roadside Assistance (RSA)</p>
-                      <p className="text-[10px] text-slate-300">Towing and emergency on-road technical assistance across Delhi NCR and India.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
-              <button
-                type="button"
-                onClick={() => setIsWarrantyModalOpen(false)}
-                className="px-5 py-2.5 rounded-2xl bg-white text-black text-xs font-bold uppercase tracking-wider"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* =========================================================
-          GENERIC PREVIEW MODAL FOR USER UPLOADED FILES
-      ========================================================= */}
-      {previewDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-3xl clay-card-carbon rounded-3xl p-6 border border-red-500/30 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
-              <div>
-                <h3 className="font-black text-white text-base truncate max-w-md">{previewDoc.name}</h3>
-                <p className="text-xs text-red-300">{previewDoc.category} • Uploaded on {formatDateStr(previewDoc.uploadedAt)}</p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleDownload(previewDoc)}
-                  className="p-2 rounded-xl text-slate-300 hover:text-white bg-white/5 hover:bg-white/10"
-                  title="Download"
-                >
-                  <Download className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPreviewDoc(null)}
-                  className="p-2 rounded-xl text-slate-300 hover:text-white bg-white/5 hover:bg-white/10"
+                  className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
-            </div>
 
-            <div className="flex-1 overflow-auto rounded-2xl bg-black/60 p-4 border border-white/5 flex items-center justify-center min-h-[300px]">
-              {previewDoc.fileType?.startsWith("image/") || previewDoc.dataUrl?.startsWith("data:image/") ? (
-                <img
-                  src={previewDoc.dataUrl}
-                  alt={previewDoc.name}
-                  className="max-h-[70vh] max-w-full object-contain rounded-xl shadow-lg"
-                />
-              ) : (
-                <div className="text-center space-y-3">
-                  <FileText className="w-16 h-16 text-red-400 mx-auto" />
-                  <p className="text-sm font-bold text-white">{previewDoc.fileName}</p>
-                  <p className="text-xs text-slate-400">PDF document preview</p>
-                  <a
-                    href={previewDoc.dataUrl}
-                    download={previewDoc.fileName}
+              <form onSubmit={handleUploadSubmit} className="space-y-4">
+                {/* Document Category */}
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                    Document Category
+                  </label>
+                  <select
+                    value={docCategory}
+                    onChange={(e) => setDocCategory(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-2xl bg-black/50 border border-white/10 text-white text-xs focus:border-red-500 outline-none"
+                  >
+                    <option value="Driving License (DL)">Driving License (DL)</option>
+                    <option value="Registration Certificate (RC Scan)">Registration Certificate (RC Scan)</option>
+                    <option value="Vehicle Insurance Copy">Vehicle Insurance Copy</option>
+                    <option value="Pollution / Green Pass (PUC)">Pollution / Green Pass (PUC)</option>
+                    <option value="Service / Maintenance Bill">Service / Maintenance Bill</option>
+                    <option value="Roadside Assistance (RSA)">Roadside Assistance (RSA)</option>
+                    <option value="Warranty Endorsement">Warranty Endorsement</option>
+                    <option value="Other Document">Other Document</option>
+                  </select>
+                </div>
+
+                {/* Document Title */}
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                    Document Name / Title
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Saksham DL Front & Back or Oben 1st Service"
+                    value={docName}
+                    onChange={(e) => setDocName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-2xl bg-black/50 border border-white/10 text-white text-xs focus:border-red-500 outline-none"
+                    required
+                  />
+                </div>
+
+                {/* Expiry Date (Optional) */}
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                    Validity / Expiry Date (Optional)
+                  </label>
+                  <input
+                    type="date"
+                    value={docExpiry}
+                    onChange={(e) => setDocExpiry(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-2xl bg-black/50 border border-white/10 text-white text-xs focus:border-red-500 outline-none"
+                  />
+                </div>
+
+                {/* File Dropzone with Standard Accessible Label */}
+                <div>
+                  <span className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                    Choose File (Image or PDF)
+                  </span>
+
+                  <input
+                    id="wallet-doc-file-input"
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleInputChange}
+                    accept="image/*,application/pdf,.pdf,.jpg,.jpeg,.png,.webp"
+                    className="sr-only"
+                  />
+
+                  <label
+                    htmlFor="wallet-doc-file-input"
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    className={`
+                      block p-6 rounded-2xl border-2 border-dashed
+                      cursor-pointer transition-all text-center
+                      ${
+                        isDragging
+                          ? "border-red-400 bg-red-950/40 scale-[1.01]"
+                          : fileName
+                          ? "border-emerald-500/50 bg-black/40"
+                          : "border-red-500/30 hover:border-red-500/70 bg-black/30"
+                      }
+                    `}
+                  >
+                    {isProcessingFile ? (
+                      <div className="py-2 space-y-2">
+                        <Loader2 className="w-8 h-8 text-red-400 mx-auto animate-spin" />
+                        <p className="text-xs font-bold text-white">Compressing & preparing file...</p>
+                      </div>
+                    ) : fileName ? (
+                      <div className="py-1 space-y-1">
+                        <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center">
+                          <Check className="w-5 h-5" />
+                        </div>
+                        <p className="text-xs font-bold text-white truncate max-w-xs mx-auto">{fileName}</p>
+                        <p className="text-[10px] text-emerald-400 font-mono">
+                          {formatBytes(fileSize)} • Optimized & Ready
+                        </p>
+                        <p className="text-[10px] text-slate-400 underline pt-1">Click to replace file</p>
+                      </div>
+                    ) : (
+                      <div className="py-1 space-y-1">
+                        <Upload className="w-8 h-8 text-red-400 mx-auto mb-1.5" />
+                        <p className="text-xs font-bold text-white">Click to browse or take photo / drag & drop</p>
+                        <p className="text-[10px] text-slate-400">
+                          Supports photos (camera/gallery) and PDFs. Auto-compressed for instant speed.
+                        </p>
+                      </div>
+                    )}
+                  </label>
+                </div>
+
+                {uploadError && (
+                  <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-400 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>{uploadError}</span>
+                  </div>
+                )}
+
+                {uploadSuccess && (
+                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-400 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                    <span>Document saved successfully to your wallet!</span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setIsUploadModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl bg-white/5 text-slate-300 hover:text-white text-xs font-bold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!fileData || isSaving || isProcessingFile}
                     className="
-                      inline-flex items-center gap-2 px-4 py-2 rounded-xl
-                      clay-button-primary text-white text-xs font-bold
+                      px-5 py-2.5 rounded-xl
+                      clay-button-primary
+                      text-white text-xs font-bold uppercase tracking-wider
+                      disabled:opacity-50 disabled:cursor-not-allowed
+                      flex items-center gap-1.5
                     "
                   >
-                    <Download className="w-4 h-4" />
-                    <span>Download PDF to View</span>
-                  </a>
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <span>Save to Wallet</span>
+                    )}
+                  </button>
                 </div>
-              )}
+              </form>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
+
+      {/* =========================================================
+          FULL DIGITAL RC SMART CARD MODAL (PORTALED DIRECTLY TO BODY)
+      ========================================================= */}
+      {isRcModalOpen &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto animate-fade-in"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setIsRcModalOpen(false);
+            }}
+          >
+            <div className="w-full max-w-2xl clay-card-hero-red rounded-3xl p-6 sm:p-8 border border-red-400/40 shadow-2xl relative space-y-6 my-auto max-h-[90vh] overflow-y-auto">
+              {/* Header */}
+              <div className="flex items-start justify-between pb-4 border-b border-white/15">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-1 rounded-lg bg-black/40 border border-red-400/30 text-[10px] font-mono font-bold text-red-200">
+                      GOVERNMENT OF NCT OF DELHI
+                    </span>
+                    <span className="px-2.5 py-1 rounded-lg bg-black/40 border border-red-400/30 text-[10px] font-mono font-bold text-emerald-300">
+                      TRANSPORT DEPARTMENT
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-black text-white tracking-tight mt-1">
+                    CERTIFICATE OF REGISTRATION (SMART CARD RC)
+                  </h3>
+                  <p className="text-xs text-red-100/80">FORM 23A • Motor Vehicles Act, 1988</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsRcModalOpen(false)}
+                  className="p-2 rounded-xl text-white/70 hover:text-white bg-black/40 hover:bg-black/60 border border-white/10"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Smart Card Visual Representation */}
+              <div className="p-6 rounded-3xl bg-black/60 border border-red-400/30 shadow-inner backdrop-blur-md space-y-6">
+                {/* Top Row: Chip + Plate + Status */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    {/* Gold SIM / Smart Card Chip Icon */}
+                    <div className="w-12 h-10 rounded-lg bg-gradient-to-br from-amber-300 via-amber-400 to-amber-600 p-0.5 shadow-md flex items-center justify-center">
+                      <div className="w-full h-full rounded border border-amber-800/40 grid grid-cols-2 grid-rows-3 gap-0.5 p-1 bg-amber-400/60">
+                        <div className="border-r border-b border-amber-900/30" />
+                        <div className="border-b border-amber-900/30" />
+                        <div className="border-r border-b border-amber-900/30" />
+                        <div className="border-b border-amber-900/30" />
+                        <div className="border-r border-amber-900/30" />
+                        <div />
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-mono uppercase text-slate-400">Smart Card ID</span>
+                      <p className="text-xs font-mono font-bold text-white">DL-8-2024-EV002219</p>
+                    </div>
+                  </div>
+
+                  <div className="px-4 py-2 rounded-2xl bg-gradient-to-r from-red-600 to-red-800 border border-red-400/50 shadow-lg text-center">
+                    <span className="text-[9px] font-mono font-bold text-white/80 block uppercase">Registration Mark</span>
+                    <span className="text-2xl font-black font-mono tracking-widest text-white">
+                      {OFFICIAL_BIKE_RC.rc_regn_no}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Data Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                    <span className="text-[10px] uppercase font-mono text-slate-400">Registered Owner</span>
+                    <p className="text-sm font-black text-white">{OFFICIAL_BIKE_RC.rc_owner_name}</p>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                    <span className="text-[10px] uppercase font-mono text-slate-400">Registration Date</span>
+                    <p className="text-sm font-black text-white">{OFFICIAL_BIKE_RC.rc_regn_dt}</p>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                    <span className="text-[10px] uppercase font-mono text-slate-400">Chassis Number (VIN)</span>
+                    <p className="text-sm font-mono font-bold text-red-300">{OFFICIAL_BIKE_RC.rc_chasi_no}</p>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                    <span className="text-[10px] uppercase font-mono text-slate-400">Motor Number</span>
+                    <p className="text-sm font-mono font-bold text-red-300">{OFFICIAL_BIKE_RC.rc_eng_no}</p>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                    <span className="text-[10px] uppercase font-mono text-slate-400">Maker & Model</span>
+                    <p className="text-xs font-bold text-white">{OFFICIAL_BIKE_RC.rc_maker_desc}</p>
+                    <p className="text-xs text-red-300 font-bold">MODEL: {OFFICIAL_BIKE_RC.rc_maker_model} (ELECTRIC RED)</p>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                    <span className="text-[10px] uppercase font-mono text-slate-400">Powertrain Specs</span>
+                    <p className="text-xs font-bold text-white">{OFFICIAL_BIKE_RC.motor_kw} Motor • {OFFICIAL_BIKE_RC.battery_kwh} Battery</p>
+                    <p className="text-xs text-emerald-400 font-mono">BOV Electric • Class 2WN</p>
+                  </div>
+
+                  <div className="sm:col-span-2 p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                    <span className="text-[10px] uppercase font-mono text-slate-400">Registered Address</span>
+                    <p className="text-xs font-medium text-slate-200">{OFFICIAL_BIKE_RC.rc_present_address}</p>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                    <span className="text-[10px] uppercase font-mono text-slate-400">Registering Authority (RTO)</span>
+                    <p className="text-xs font-bold text-white">{OFFICIAL_BIKE_RC.rc_registered_at}</p>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                    <span className="text-[10px] uppercase font-mono text-slate-400">Tax & Status</span>
+                    <p className="text-xs font-bold text-emerald-400">Status: {OFFICIAL_BIKE_RC.rc_status} • Tax: {OFFICIAL_BIKE_RC.rc_tax_mode}</p>
+                  </div>
+                </div>
+
+                {/* Bottom Vahan Seal */}
+                <div className="flex items-center justify-between pt-3 border-t border-white/10 text-[10px] text-slate-400">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>Vahan National Register Database Verified</span>
+                  </div>
+                  <span className="font-mono text-slate-500">Mfg: {OFFICIAL_BIKE_RC.rc_manu_month_yr}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="px-4 py-2.5 rounded-2xl bg-black/50 hover:bg-black/70 border border-white/10 text-white text-xs font-bold flex items-center gap-2"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>Print / Save PDF</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsRcModalOpen(false)}
+                  className="px-5 py-2.5 rounded-2xl bg-white text-black text-xs font-bold uppercase tracking-wider"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* =========================================================
+          ICICI LOMBARD INSURANCE MODAL (PORTALED DIRECTLY TO BODY)
+      ========================================================= */}
+      {isInsuranceModalOpen &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto animate-fade-in"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setIsInsuranceModalOpen(false);
+            }}
+          >
+            <div className="w-full max-w-lg clay-card-wine rounded-3xl p-6 sm:p-7 border border-red-500/30 shadow-2xl relative space-y-5 my-auto max-h-[90vh] overflow-y-auto">
+              <div className="flex items-start justify-between pb-3 border-b border-white/10">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2.5 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    <ShieldCheck className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-white">ICICI Lombard Policy Details</h3>
+                    <p className="text-xs text-red-200/80">Comprehensive 2-Wheeler EV Protection</p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsInsuranceModalOpen(false)}
+                  className="p-2 rounded-xl text-white/70 hover:text-white bg-black/30 hover:bg-black/50"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="p-3.5 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                  <span className="text-[10px] uppercase font-mono text-slate-400">Policy Number</span>
+                  <p className="text-base font-mono font-black text-emerald-300">{OFFICIAL_BIKE_RC.rc_insurance_policy_no}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                    <span className="text-[10px] uppercase font-mono text-slate-400">Insurer</span>
+                    <p className="text-xs font-bold text-white">{OFFICIAL_BIKE_RC.rc_insurance_comp}</p>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                    <span className="text-[10px] uppercase font-mono text-slate-400">Validity Period</span>
+                    <p className="text-xs font-mono font-black text-emerald-400">Valid till {OFFICIAL_BIKE_RC.rc_insurance_upto}</p>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-black/40 border border-white/5 space-y-2">
+                  <span className="text-[10px] uppercase font-mono text-slate-400">Policy Scope</span>
+                  <ul className="space-y-1.5 text-slate-200 text-xs">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                      <span>Own Damage (OD) Cover for Oben Rorr Electric</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                      <span>5-Year Mandatory Third-Party Liability Cover</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                      <span>Electric Battery & Motor Hazard Protection</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setIsInsuranceModalOpen(false)}
+                  className="px-5 py-2.5 rounded-2xl bg-white text-black text-xs font-bold uppercase tracking-wider"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* =========================================================
+          OBEN 3-YEAR WARRANTY DETAILS MODAL (PORTALED DIRECTLY TO BODY)
+      ========================================================= */}
+      {isWarrantyModalOpen &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto animate-fade-in"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setIsWarrantyModalOpen(false);
+            }}
+          >
+            <div className="w-full max-w-lg clay-card-hero-red rounded-3xl p-6 sm:p-7 border border-red-500/30 shadow-2xl relative space-y-5 my-auto max-h-[90vh] overflow-y-auto">
+              <div className="flex items-start justify-between pb-3 border-b border-white/10">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2.5 rounded-2xl bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    <Sparkles className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-white">Oben Rorr 3-Year Warranty</h3>
+                    <p className="text-xs text-red-200/80">Official Powertrain Coverage Breakdown</p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsWarrantyModalOpen(false)}
+                  className="p-2 rounded-xl text-white/70 hover:text-white bg-black/30 hover:bg-black/50"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="p-3.5 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] uppercase font-mono text-slate-400">Coverage Duration</span>
+                    <span className="text-[10px] font-bold text-amber-400">{warrantyDays} Days Left</span>
+                  </div>
+                  <p className="text-base font-black text-white">3 Years or 50,000 Kilometers</p>
+                  <p className="text-[10px] text-red-200/80">Valid: 24-Sep-2024 to 23-Sep-2027</p>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-black/40 border border-white/5 space-y-2">
+                  <span className="text-[10px] uppercase font-mono text-slate-400">Protected Components</span>
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold text-white text-xs">8 kW Peak IPMSM Mid-Drive Motor</p>
+                        <p className="text-[10px] text-slate-300">Covers motor windings, rotor, shaft bearings, and controller drive circuitry.</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold text-white text-xs">4.4 kWh LFP High Thermal Safety Pack</p>
+                        <p className="text-[10px] text-slate-300">Guarantees state of health (SoH), cell internal resistance, and battery management system (BMS).</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold text-white text-xs">24x7 Roadside Assistance (RSA)</p>
+                        <p className="text-[10px] text-slate-300">Towing and emergency on-road technical assistance across Delhi NCR and India.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setIsWarrantyModalOpen(false)}
+                  className="px-5 py-2.5 rounded-2xl bg-white text-black text-xs font-bold uppercase tracking-wider"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* =========================================================
+          GENERIC PREVIEW MODAL FOR USER UPLOADED FILES (PORTALED DIRECTLY TO BODY)
+      ========================================================= */}
+      {previewDoc &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto animate-fade-in"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setPreviewDoc(null);
+            }}
+          >
+            <div className="w-full max-w-3xl clay-card-carbon rounded-3xl p-6 border border-red-500/30 shadow-2xl space-y-4 my-auto max-h-[90vh] flex flex-col">
+              <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                <div>
+                  <h3 className="font-black text-white text-base truncate max-w-md">{previewDoc.name}</h3>
+                  <p className="text-xs text-red-300">{previewDoc.category} • Uploaded on {formatDateStr(previewDoc.uploadedAt)}</p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleDownload(previewDoc)}
+                    className="p-2 rounded-xl text-slate-300 hover:text-white bg-white/5 hover:bg-white/10"
+                    title="Download"
+                  >
+                    <Download className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewDoc(null)}
+                    className="p-2 rounded-xl text-slate-300 hover:text-white bg-white/5 hover:bg-white/10"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-auto rounded-2xl bg-black/60 p-4 border border-white/5 flex items-center justify-center min-h-[300px]">
+                {previewDoc.fileType?.startsWith("image/") || previewDoc.dataUrl?.startsWith("data:image/") ? (
+                  <img
+                    src={previewDoc.dataUrl}
+                    alt={previewDoc.name}
+                    className="max-h-[70vh] max-w-full object-contain rounded-xl shadow-lg"
+                  />
+                ) : (
+                  <div className="text-center space-y-3">
+                    <FileText className="w-16 h-16 text-red-400 mx-auto" />
+                    <p className="text-sm font-bold text-white">{previewDoc.fileName}</p>
+                    <p className="text-xs text-slate-400">PDF document preview</p>
+                    <a
+                      href={previewDoc.dataUrl}
+                      download={previewDoc.fileName}
+                      className="
+                        inline-flex items-center gap-2 px-4 py-2 rounded-xl
+                        clay-button-primary text-white text-xs font-bold
+                      "
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>Download PDF to View</span>
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
