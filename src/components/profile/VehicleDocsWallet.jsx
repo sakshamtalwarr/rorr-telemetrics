@@ -15,15 +15,19 @@ import {
   ExternalLink,
   File,
   Image as ImageIcon,
-  QrCode,
   Printer,
   Sparkles,
   Bike,
-  Lock,
+  Loader2,
+  Check,
 } from "lucide-react";
 import GlassCard from "../common/GlassCard";
-
-const STORAGE_KEY = "rorr_vehicle_documents";
+import {
+  getAllStoredDocuments,
+  saveStoredDocument,
+  deleteStoredDocument,
+  processAndOptimizeFile,
+} from "../../services/documentStorage";
 
 // Official Saksham Talwar Vahan RC Data
 export const OFFICIAL_BIKE_RC = {
@@ -64,7 +68,7 @@ export default function VehicleDocsWallet() {
   const [isInsuranceModalOpen, setIsInsuranceModalOpen] = useState(false);
   const [isWarrantyModalOpen, setIsWarrantyModalOpen] = useState(false);
 
-  // Form states for upload
+  // Upload Form states
   const [docName, setDocName] = useState("");
   const [docCategory, setDocCategory] = useState("Driving License (DL)");
   const [docExpiry, setDocExpiry] = useState("");
@@ -73,74 +77,98 @@ export default function VehicleDocsWallet() {
   const [fileType, setFileType] = useState("");
   const [fileSize, setFileSize] = useState(0);
   const [uploadError, setUploadError] = useState("");
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
 
   const fileInputRef = useRef(null);
 
-  // Load documents from localStorage on mount
+  // Load documents from IndexedDB on mount
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          setDocuments(parsed);
+    let cancelled = false;
+    async function loadDocs() {
+      try {
+        const stored = await getAllStoredDocuments();
+        if (!cancelled && Array.isArray(stored)) {
+          setDocuments(stored);
         }
+      } catch (e) {
+        console.error("Failed to load vehicle documents:", e);
       }
-    } catch (e) {
-      console.error("Failed to load vehicle documents:", e);
     }
+    loadDocs();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // Save documents to localStorage
-  const saveDocuments = (updatedDocs) => {
-    setDocuments(updatedDocs);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedDocs));
-    } catch (e) {
-      console.error("Storage limit reached or failed to save:", e);
-      alert("Storage limit reached. Try uploading a smaller image or compressed PDF.");
-    }
-  };
-
-  // Handle file selection
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
+  // Process incoming file (from input change or drag & drop)
+  const handleFileProcess = async (file) => {
     if (!file) return;
 
     setUploadError("");
-    // Check max size (approx 6MB to fit comfortably in browser localStorage quota)
-    if (file.size > 6 * 1024 * 1024) {
-      setUploadError("File exceeds 6MB. Please upload a smaller compressed image or PDF.");
-      return;
+    setIsProcessingFile(true);
+
+    try {
+      const processed = await processAndOptimizeFile(file);
+      setFileData(processed.dataUrl);
+      setFileName(processed.fileName);
+      setFileType(processed.fileType);
+      setFileSize(processed.fileSize);
+
+      if (!docName.trim()) {
+        const cleanName =
+          file.name.substring(0, file.name.lastIndexOf(".")) || file.name;
+        setDocName(cleanName.replace(/[-_]/g, " "));
+      }
+    } catch (err) {
+      console.error("File processing error:", err);
+      setUploadError(err.message || "Failed to process selected file.");
+    } finally {
+      setIsProcessingFile(false);
     }
+  };
 
-    setFileName(file.name);
-    setFileType(file.type);
-    setFileSize(file.size);
-
-    if (!docName) {
-      // Auto-populate name without extension
-      const cleanName = file.name.substring(0, file.name.lastIndexOf(".")) || file.name;
-      setDocName(cleanName.replace(/[-_]/g, " "));
+  const handleInputChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileProcess(file);
     }
+  };
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setFileData(reader.result);
-    };
-    reader.onerror = () => {
-      setUploadError("Failed to read file.");
-    };
-    reader.readAsDataURL(file);
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleFileProcess(file);
+    }
   };
 
   // Submit upload
-  const handleUploadSubmit = (e) => {
+  const handleUploadSubmit = async (e) => {
     e.preventDefault();
     if (!fileData || !docName.trim()) {
-      setUploadError("Please provide a file and a document title.");
+      setUploadError("Please select a file and enter a document name.");
       return;
     }
+
+    setIsSaving(true);
+    setUploadError("");
 
     const newDoc = {
       id: "doc_" + Date.now(),
@@ -154,28 +182,93 @@ export default function VehicleDocsWallet() {
       uploadedAt: new Date().toISOString(),
     };
 
-    const updated = [newDoc, ...documents];
-    saveDocuments(updated);
+    try {
+      await saveStoredDocument(newDoc);
+      setDocuments((prev) => [newDoc, ...prev]);
+      setUploadSuccess(true);
 
-    // Reset form
-    setDocName("");
-    setDocCategory("Driving License (DL)");
-    setDocExpiry("");
-    setFileData(null);
-    setFileName("");
-    setFileType("");
-    setFileSize(0);
-    setUploadError("");
-    setIsUploadModalOpen(false);
+      setTimeout(() => {
+        // Reset form
+        setDocName("");
+        setDocCategory("Driving License (DL)");
+        setDocExpiry("");
+        setFileData(null);
+        setFileName("");
+        setFileType("");
+        setFileSize(0);
+        setUploadError("");
+        setUploadSuccess(false);
+        setIsUploadModalOpen(false);
+      }, 600);
+    } catch (err) {
+      setUploadError(err.message || "Failed to save document.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Add Sample DL Preset
+  const handleAddSampleDL = async () => {
+    // Generate a clean SVG sample DL graphic
+    const sampleSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="380" viewBox="0 0 600 380">
+      <defs>
+        <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#1e2230"/>
+          <stop offset="100%" stop-color="#0d0e14"/>
+        </linearGradient>
+      </defs>
+      <rect width="600" height="380" rx="20" fill="url(#bg)" stroke="#dc2626" stroke-width="2"/>
+      <rect x="25" y="25" width="550" height="50" rx="10" fill="#dc2626" fill-opacity="0.2"/>
+      <text x="40" y="55" fill="#f87171" font-family="sans-serif" font-weight="900" font-size="16">TRANSPORT DEPARTMENT • GOVT OF NCT DELHI</text>
+      <text x="40" y="70" fill="#ffffff" font-family="sans-serif" font-weight="bold" font-size="11">DRIVING LICENCE (FORM 7)</text>
+      <rect x="40" y="95" width="110" height="140" rx="10" fill="#252a3d" stroke="#f87171" stroke-width="1"/>
+      <text x="75" y="170" fill="#94a3b8" font-family="sans-serif" font-size="12">PHOTO</text>
+      <text x="175" y="115" fill="#94a3b8" font-family="monospace" font-size="11">DL NO:</text>
+      <text x="240" y="115" fill="#ffffff" font-family="monospace" font-weight="bold" font-size="14">DL-0820240092182</text>
+      <text x="175" y="145" fill="#94a3b8" font-family="sans-serif" font-size="11">NAME:</text>
+      <text x="240" y="145" fill="#ffffff" font-family="sans-serif" font-weight="bold" font-size="14">SAKSHAM TALWAR</text>
+      <text x="175" y="175" fill="#94a3b8" font-family="sans-serif" font-size="11">CLASS:</text>
+      <text x="240" y="175" fill="#4ade80" font-family="sans-serif" font-weight="bold" font-size="12">MCWG / LMV (PRIVATE)</text>
+      <text x="175" y="205" fill="#94a3b8" font-family="sans-serif" font-size="11">VALIDITY:</text>
+      <text x="240" y="205" fill="#facc15" font-family="sans-serif" font-weight="bold" font-size="12">15-OCT-2044 (ACTIVE)</text>
+      <text x="40" y="270" fill="#94a3b8" font-family="sans-serif" font-size="11">ADDRESS: B-41, KUMHARO VAALI RD, UTTAM NAGAR, NEW DELHI - 110059</text>
+      <rect x="40" y="295" width="520" height="1" fill="#dc2626" fill-opacity="0.3"/>
+      <text x="40" y="325" fill="#4ade80" font-family="sans-serif" font-weight="bold" font-size="12">✓ CHIP EMBEDDED SMART CARD • SARATHI VERIFIED</text>
+    </svg>`;
+
+    const dataUrl = `data:image/svg+xml;utf8,${encodeURIComponent(sampleSvg)}`;
+    const sampleDoc = {
+      id: "doc_sample_dl_" + Date.now(),
+      name: "Saksham Talwar Driving License (DL)",
+      category: "Driving License (DL)",
+      expiryDate: "2044-10-15",
+      dataUrl,
+      fileName: "Saksham_Talwar_DL.svg",
+      fileType: "image/svg+xml",
+      fileSize: 1840,
+      uploadedAt: new Date().toISOString(),
+    };
+
+    try {
+      await saveStoredDocument(sampleDoc);
+      setDocuments((prev) => [sampleDoc, ...prev]);
+      setActiveTab("uploaded");
+    } catch (err) {
+      alert("Failed to save sample: " + err.message);
+    }
   };
 
   // Delete document
-  const handleDeleteDoc = (id) => {
-    if (window.confirm("Are you sure you want to delete this document from your wallet?")) {
-      const updated = documents.filter((d) => d.id !== id);
-      saveDocuments(updated);
-      if (previewDoc?.id === id) {
-        setPreviewDoc(null);
+  const handleDeleteDoc = async (id) => {
+    if (window.confirm("Delete this document from your vehicle wallet?")) {
+      try {
+        await deleteStoredDocument(id);
+        setDocuments((prev) => prev.filter((d) => d.id !== id));
+        if (previewDoc?.id === id) {
+          setPreviewDoc(null);
+        }
+      } catch (err) {
+        console.error("Delete failed:", err);
       }
     }
   };
@@ -184,7 +277,7 @@ export default function VehicleDocsWallet() {
   const handleDownload = (doc) => {
     const link = document.createElement("a");
     link.href = doc.dataUrl;
-    link.download = doc.fileName || `${doc.name}.pdf`;
+    link.download = doc.fileName || `${doc.name}.png`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -216,7 +309,7 @@ export default function VehicleDocsWallet() {
   };
 
   // Days remaining for warranty (till 23-Sep-2027)
-  const calculateDaysRemaining = (targetDateStr) => {
+  const calculateDaysRemaining = () => {
     try {
       const target = new Date("2027-09-23T23:59:59");
       const now = new Date();
@@ -247,7 +340,7 @@ export default function VehicleDocsWallet() {
                 <h3 className="text-lg font-black text-white tracking-tight flex items-center gap-2">
                   <span>Vehicle Documents & Identity Wallet</span>
                   <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-mono font-bold uppercase">
-                    Secured
+                    Offline Saved
                   </span>
                 </h3>
                 <p className="text-xs text-slate-400">
@@ -257,16 +350,35 @@ export default function VehicleDocsWallet() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
             <button
               type="button"
-              onClick={() => setIsUploadModalOpen(true)}
+              onClick={handleAddSampleDL}
+              className="
+                px-3.5 py-2.5 rounded-2xl
+                bg-black/40 hover:bg-black/60 border border-white/10
+                text-slate-300 hover:text-white
+                font-bold text-xs uppercase tracking-wider transition-all
+                flex items-center gap-1.5
+              "
+              title="Add a sample verified DL card for Saksham Talwar to test preview & download"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Sample DL</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setUploadError("");
+                setIsUploadModalOpen(true);
+              }}
               className="
                 px-4 py-2.5 rounded-2xl
                 clay-button-primary
                 flex items-center gap-2
                 font-bold text-xs uppercase tracking-wider
-                text-white transition-all
+                text-white transition-all shadow-lg
               "
             >
               <Plus className="w-4 h-4" />
@@ -561,7 +673,10 @@ export default function VehicleDocsWallet() {
             {documents.length > 0 && (
               <button
                 type="button"
-                onClick={() => setIsUploadModalOpen(true)}
+                onClick={() => {
+                  setUploadError("");
+                  setIsUploadModalOpen(true);
+                }}
                 className="text-xs text-red-400 hover:text-red-300 font-bold flex items-center gap-1"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -578,12 +693,15 @@ export default function VehicleDocsWallet() {
                 </div>
                 <h4 className="text-base font-bold text-white">No documents uploaded yet</h4>
                 <p className="text-xs text-slate-400">
-                  Upload your Driving License (DL), physical RC scan, PUC certificate, service receipts, or insurance endorsement files. They are saved securely in your browser.
+                  Upload your Driving License (DL), physical RC scan, PUC certificate, service receipts, or insurance endorsements. They are stored securely offline in your browser.
                 </p>
-                <div className="pt-2">
+                <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
                   <button
                     type="button"
-                    onClick={() => setIsUploadModalOpen(true)}
+                    onClick={() => {
+                      setUploadError("");
+                      setIsUploadModalOpen(true);
+                    }}
                     className="
                       px-5 py-2.5 rounded-2xl
                       clay-button-primary
@@ -594,13 +712,29 @@ export default function VehicleDocsWallet() {
                     <Plus className="w-4 h-4" />
                     <span>Upload Driving License or RC</span>
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={handleAddSampleDL}
+                    className="
+                      px-4 py-2.5 rounded-2xl
+                      bg-black/40 hover:bg-black/60 border border-white/10
+                      font-bold text-xs uppercase tracking-wider text-slate-300 hover:text-white
+                      inline-flex items-center gap-1.5
+                    "
+                  >
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span>Generate Sample DL</span>
+                  </button>
                 </div>
               </div>
             </GlassCard>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {documents.map((doc) => {
-                const isImage = doc.fileType?.startsWith("image/") || doc.dataUrl?.startsWith("data:image/");
+                const isImage =
+                  doc.fileType?.startsWith("image/") ||
+                  doc.dataUrl?.startsWith("data:image/");
                 return (
                   <GlassCard
                     key={doc.id}
@@ -786,45 +920,77 @@ export default function VehicleDocsWallet() {
                 />
               </div>
 
-              {/* File Dropzone */}
+              {/* File Dropzone with Standard Accessible Label */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                <span className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
                   Choose File (Image or PDF)
-                </label>
+                </span>
+
                 <input
+                  id="wallet-doc-file-input"
                   type="file"
                   ref={fileInputRef}
-                  onChange={handleFileChange}
-                  accept="image/png,image/jpeg,image/webp,image/jpg,application/pdf"
-                  className="hidden"
+                  onChange={handleInputChange}
+                  accept="image/*,application/pdf,.pdf,.jpg,.jpeg,.png,.webp"
+                  className="sr-only"
                 />
 
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="
-                    p-6 rounded-2xl border-2 border-dashed border-red-500/30 hover:border-red-500/60
-                    bg-black/30 text-center cursor-pointer transition-all
-                  "
+                <label
+                  htmlFor="wallet-doc-file-input"
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={`
+                    block p-6 rounded-2xl border-2 border-dashed
+                    cursor-pointer transition-all text-center
+                    ${
+                      isDragging
+                        ? "border-red-400 bg-red-950/40 scale-[1.01]"
+                        : fileName
+                        ? "border-emerald-500/50 bg-black/40"
+                        : "border-red-500/30 hover:border-red-500/70 bg-black/30"
+                    }
+                  `}
                 >
-                  <Upload className="w-8 h-8 text-red-400 mx-auto mb-2" />
-                  {fileName ? (
-                    <div>
+                  {isProcessingFile ? (
+                    <div className="py-2 space-y-2">
+                      <Loader2 className="w-8 h-8 text-red-400 mx-auto animate-spin" />
+                      <p className="text-xs font-bold text-white">Compressing & preparing file...</p>
+                    </div>
+                  ) : fileName ? (
+                    <div className="py-1 space-y-1">
+                      <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center">
+                        <Check className="w-5 h-5" />
+                      </div>
                       <p className="text-xs font-bold text-white truncate max-w-xs mx-auto">{fileName}</p>
-                      <p className="text-[10px] text-emerald-400 mt-1 font-mono">{formatBytes(fileSize)} • Ready</p>
+                      <p className="text-[10px] text-emerald-400 font-mono">
+                        {formatBytes(fileSize)} • Optimized & Ready
+                      </p>
+                      <p className="text-[10px] text-slate-400 underline pt-1">Click to replace file</p>
                     </div>
                   ) : (
-                    <div>
-                      <p className="text-xs font-bold text-white">Click to browse or drag & drop</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">PNG, JPG, WEBP, or PDF up to 6 MB</p>
+                    <div className="py-1 space-y-1">
+                      <Upload className="w-8 h-8 text-red-400 mx-auto mb-1.5" />
+                      <p className="text-xs font-bold text-white">Click to browse or take photo / drag & drop</p>
+                      <p className="text-[10px] text-slate-400">
+                        Supports photos (camera/gallery) and PDFs. Auto-compressed for instant speed.
+                      </p>
                     </div>
                   )}
-                </div>
+                </label>
               </div>
 
               {uploadError && (
                 <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-400 flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
                   <span>{uploadError}</span>
+                </div>
+              )}
+
+              {uploadSuccess && (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-400 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                  <span>Document saved successfully to your wallet!</span>
                 </div>
               )}
 
@@ -838,15 +1004,23 @@ export default function VehicleDocsWallet() {
                 </button>
                 <button
                   type="submit"
-                  disabled={!fileData}
+                  disabled={!fileData || isSaving || isProcessingFile}
                   className="
                     px-5 py-2.5 rounded-xl
                     clay-button-primary
                     text-white text-xs font-bold uppercase tracking-wider
                     disabled:opacity-50 disabled:cursor-not-allowed
+                    flex items-center gap-1.5
                   "
                 >
-                  Save to Wallet
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Save to Wallet</span>
+                  )}
                 </button>
               </div>
             </form>
