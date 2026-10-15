@@ -104,30 +104,6 @@ export default function VehicleDocsWallet() {
     };
   }, []);
 
-  // Lock body scroll when any modal is open to keep view locked on modal
-  useEffect(() => {
-    const isAnyModalOpen =
-      isUploadModalOpen ||
-      isRcModalOpen ||
-      isInsuranceModalOpen ||
-      isWarrantyModalOpen ||
-      !!previewDoc;
-
-    if (isAnyModalOpen) {
-      const originalOverflow = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = originalOverflow;
-      };
-    }
-  }, [
-    isUploadModalOpen,
-    isRcModalOpen,
-    isInsuranceModalOpen,
-    isWarrantyModalOpen,
-    previewDoc,
-  ]);
-
   // Process incoming file (from input change or drag & drop)
   const handleFileProcess = async (file) => {
     if (!file) return;
@@ -871,18 +847,24 @@ export default function VehicleDocsWallet() {
       )}
 
       {/* =========================================================
-          UPLOAD DOCUMENT MODAL (PORTALED DIRECTLY TO BODY)
+          UPLOAD DOCUMENT MODAL (MOBILE BOTTOM-SHEET / DESKTOP CENTERED)
       ========================================================= */}
       {isUploadModalOpen &&
         createPortal(
           <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto animate-fade-in"
+            className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-md flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4 overflow-y-auto overscroll-contain animate-fade-in"
             onClick={(e) => {
               if (e.target === e.currentTarget) setIsUploadModalOpen(false);
             }}
           >
-            <div className="w-full max-w-lg clay-card-carbon rounded-3xl p-6 border border-red-500/30 shadow-2xl space-y-5 my-auto max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between pb-4 border-b border-white/10">
+            <div
+              className="w-full sm:max-w-lg clay-card-carbon rounded-t-[32px] sm:rounded-3xl p-5 sm:p-6 border-t sm:border border-red-500/30 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] sm:pb-6 sheet-slide-up"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Mobile Drag Indicator */}
+              <div className="w-12 h-1.5 rounded-full bg-white/20 mx-auto sm:hidden -mt-1 mb-2" />
+
+              <div className="flex items-center justify-between pb-3 border-b border-white/10">
                 <div className="flex items-center gap-2.5">
                   <div className="p-2 rounded-xl bg-red-500/20 text-red-400">
                     <Upload className="w-5 h-5" />
@@ -972,7 +954,7 @@ export default function VehicleDocsWallet() {
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
                     className={`
-                      block p-6 rounded-2xl border-2 border-dashed
+                      block p-5 sm:p-6 rounded-2xl border-2 border-dashed
                       cursor-pointer transition-all text-center
                       ${
                         isDragging
@@ -1001,7 +983,7 @@ export default function VehicleDocsWallet() {
                       </div>
                     ) : (
                       <div className="py-1 space-y-1">
-                        <Upload className="w-8 h-8 text-red-400 mx-auto mb-1.5" />
+                        <Upload className="w-7 h-7 text-red-400 mx-auto mb-1.5" />
                         <p className="text-xs font-bold text-white">Click to browse or take photo / drag & drop</p>
                         <p className="text-[10px] text-slate-400">
                           Supports photos (camera/gallery) and PDFs. Auto-compressed for instant speed.
@@ -1061,32 +1043,38 @@ export default function VehicleDocsWallet() {
         )}
 
       {/* =========================================================
-          FULL DIGITAL RC SMART CARD MODAL (PORTALED DIRECTLY TO BODY)
+          FULL DIGITAL RC SMART CARD MODAL (MOBILE BOTTOM-SHEET / DESKTOP CENTERED)
       ========================================================= */}
       {isRcModalOpen &&
         createPortal(
           <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto animate-fade-in"
+            className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-md flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4 overflow-y-auto overscroll-contain animate-fade-in"
             onClick={(e) => {
               if (e.target === e.currentTarget) setIsRcModalOpen(false);
             }}
           >
-            <div className="w-full max-w-2xl clay-card-hero-red rounded-3xl p-6 sm:p-8 border border-red-400/40 shadow-2xl relative space-y-6 my-auto max-h-[90vh] overflow-y-auto">
+            <div
+              className="w-full sm:max-w-2xl clay-card-hero-red rounded-t-[32px] sm:rounded-3xl p-5 sm:p-8 border-t sm:border border-red-400/40 shadow-2xl relative space-y-5 max-h-[92vh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] sm:pb-8 sheet-slide-up"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Mobile Drag Indicator */}
+              <div className="w-12 h-1.5 rounded-full bg-white/30 mx-auto sm:hidden -mt-1 mb-2" />
+
               {/* Header */}
-              <div className="flex items-start justify-between pb-4 border-b border-white/15">
+              <div className="flex items-start justify-between pb-3 border-b border-white/15">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-1 rounded-lg bg-black/40 border border-red-400/30 text-[10px] font-mono font-bold text-red-200">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-lg bg-black/40 border border-red-400/30 text-[9px] sm:text-[10px] font-mono font-bold text-red-200">
                       GOVERNMENT OF NCT OF DELHI
                     </span>
-                    <span className="px-2.5 py-1 rounded-lg bg-black/40 border border-red-400/30 text-[10px] font-mono font-bold text-emerald-300">
+                    <span className="px-2 py-0.5 rounded-lg bg-black/40 border border-red-400/30 text-[9px] sm:text-[10px] font-mono font-bold text-emerald-300">
                       TRANSPORT DEPARTMENT
                     </span>
                   </div>
-                  <h3 className="text-xl font-black text-white tracking-tight mt-1">
+                  <h3 className="text-base sm:text-xl font-black text-white tracking-tight mt-1">
                     CERTIFICATE OF REGISTRATION (SMART CARD RC)
                   </h3>
-                  <p className="text-xs text-red-100/80">FORM 23A • Motor Vehicles Act, 1988</p>
+                  <p className="text-[11px] text-red-100/80">FORM 23A • Motor Vehicles Act, 1988</p>
                 </div>
 
                 <button
@@ -1099,12 +1087,12 @@ export default function VehicleDocsWallet() {
               </div>
 
               {/* Smart Card Visual Representation */}
-              <div className="p-6 rounded-3xl bg-black/60 border border-red-400/30 shadow-inner backdrop-blur-md space-y-6">
+              <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-black/60 border border-red-400/30 shadow-inner backdrop-blur-md space-y-4 sm:space-y-6">
                 {/* Top Row: Chip + Plate + Status */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     {/* Gold SIM / Smart Card Chip Icon */}
-                    <div className="w-12 h-10 rounded-lg bg-gradient-to-br from-amber-300 via-amber-400 to-amber-600 p-0.5 shadow-md flex items-center justify-center">
+                    <div className="w-11 h-9 sm:w-12 sm:h-10 rounded-lg bg-gradient-to-br from-amber-300 via-amber-400 to-amber-600 p-0.5 shadow-md flex items-center justify-center">
                       <div className="w-full h-full rounded border border-amber-800/40 grid grid-cols-2 grid-rows-3 gap-0.5 p-1 bg-amber-400/60">
                         <div className="border-r border-b border-amber-900/30" />
                         <div className="border-b border-amber-900/30" />
@@ -1115,73 +1103,73 @@ export default function VehicleDocsWallet() {
                       </div>
                     </div>
                     <div>
-                      <span className="text-[10px] font-mono uppercase text-slate-400">Smart Card ID</span>
+                      <span className="text-[9px] font-mono uppercase text-slate-400">Smart Card ID</span>
                       <p className="text-xs font-mono font-bold text-white">DL-8-2024-EV002219</p>
                     </div>
                   </div>
 
-                  <div className="px-4 py-2 rounded-2xl bg-gradient-to-r from-red-600 to-red-800 border border-red-400/50 shadow-lg text-center">
+                  <div className="w-full sm:w-auto px-4 py-2 rounded-2xl bg-gradient-to-r from-red-600 to-red-800 border border-red-400/50 shadow-lg text-center">
                     <span className="text-[9px] font-mono font-bold text-white/80 block uppercase">Registration Mark</span>
-                    <span className="text-2xl font-black font-mono tracking-widest text-white">
+                    <span className="text-xl sm:text-2xl font-black font-mono tracking-widest text-white">
                       {OFFICIAL_BIKE_RC.rc_regn_no}
                     </span>
                   </div>
                 </div>
 
                 {/* Data Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
+                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-0.5">
                     <span className="text-[10px] uppercase font-mono text-slate-400">Registered Owner</span>
                     <p className="text-sm font-black text-white">{OFFICIAL_BIKE_RC.rc_owner_name}</p>
                   </div>
 
-                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-0.5">
                     <span className="text-[10px] uppercase font-mono text-slate-400">Registration Date</span>
                     <p className="text-sm font-black text-white">{OFFICIAL_BIKE_RC.rc_regn_dt}</p>
                   </div>
 
-                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-0.5">
                     <span className="text-[10px] uppercase font-mono text-slate-400">Chassis Number (VIN)</span>
-                    <p className="text-sm font-mono font-bold text-red-300">{OFFICIAL_BIKE_RC.rc_chasi_no}</p>
+                    <p className="text-xs sm:text-sm font-mono font-bold text-red-300">{OFFICIAL_BIKE_RC.rc_chasi_no}</p>
                   </div>
 
-                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-0.5">
                     <span className="text-[10px] uppercase font-mono text-slate-400">Motor Number</span>
-                    <p className="text-sm font-mono font-bold text-red-300">{OFFICIAL_BIKE_RC.rc_eng_no}</p>
+                    <p className="text-xs sm:text-sm font-mono font-bold text-red-300">{OFFICIAL_BIKE_RC.rc_eng_no}</p>
                   </div>
 
-                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-0.5">
                     <span className="text-[10px] uppercase font-mono text-slate-400">Maker & Model</span>
                     <p className="text-xs font-bold text-white">{OFFICIAL_BIKE_RC.rc_maker_desc}</p>
                     <p className="text-xs text-red-300 font-bold">MODEL: {OFFICIAL_BIKE_RC.rc_maker_model} (ELECTRIC RED)</p>
                   </div>
 
-                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-0.5">
                     <span className="text-[10px] uppercase font-mono text-slate-400">Powertrain Specs</span>
                     <p className="text-xs font-bold text-white">{OFFICIAL_BIKE_RC.motor_kw} Motor • {OFFICIAL_BIKE_RC.battery_kwh} Battery</p>
                     <p className="text-xs text-emerald-400 font-mono">BOV Electric • Class 2WN</p>
                   </div>
 
-                  <div className="sm:col-span-2 p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                  <div className="sm:col-span-2 p-3 rounded-2xl bg-black/40 border border-white/5 space-y-0.5">
                     <span className="text-[10px] uppercase font-mono text-slate-400">Registered Address</span>
                     <p className="text-xs font-medium text-slate-200">{OFFICIAL_BIKE_RC.rc_present_address}</p>
                   </div>
 
-                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-0.5">
                     <span className="text-[10px] uppercase font-mono text-slate-400">Registering Authority (RTO)</span>
                     <p className="text-xs font-bold text-white">{OFFICIAL_BIKE_RC.rc_registered_at}</p>
                   </div>
 
-                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-0.5">
                     <span className="text-[10px] uppercase font-mono text-slate-400">Tax & Status</span>
                     <p className="text-xs font-bold text-emerald-400">Status: {OFFICIAL_BIKE_RC.rc_status} • Tax: {OFFICIAL_BIKE_RC.rc_tax_mode}</p>
                   </div>
                 </div>
 
                 {/* Bottom Vahan Seal */}
-                <div className="flex items-center justify-between pt-3 border-t border-white/10 text-[10px] text-slate-400">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pt-2 border-t border-white/10 text-[10px] text-slate-400">
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
                     <span>Vahan National Register Database Verified</span>
                   </div>
                   <span className="font-mono text-slate-500">Mfg: {OFFICIAL_BIKE_RC.rc_manu_month_yr}</span>
@@ -1211,24 +1199,30 @@ export default function VehicleDocsWallet() {
         )}
 
       {/* =========================================================
-          ICICI LOMBARD INSURANCE MODAL (PORTALED DIRECTLY TO BODY)
+          ICICI LOMBARD INSURANCE MODAL (MOBILE BOTTOM-SHEET / DESKTOP CENTERED)
       ========================================================= */}
       {isInsuranceModalOpen &&
         createPortal(
           <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto animate-fade-in"
+            className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-md flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4 overflow-y-auto overscroll-contain animate-fade-in"
             onClick={(e) => {
               if (e.target === e.currentTarget) setIsInsuranceModalOpen(false);
             }}
           >
-            <div className="w-full max-w-lg clay-card-wine rounded-3xl p-6 sm:p-7 border border-red-500/30 shadow-2xl relative space-y-5 my-auto max-h-[90vh] overflow-y-auto">
+            <div
+              className="w-full sm:max-w-lg clay-card-wine rounded-t-[32px] sm:rounded-3xl p-5 sm:p-7 border-t sm:border border-red-500/30 shadow-2xl relative space-y-4 max-h-[90vh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] sm:pb-7 sheet-slide-up"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Mobile Drag Indicator */}
+              <div className="w-12 h-1.5 rounded-full bg-white/25 mx-auto sm:hidden -mt-1 mb-2" />
+
               <div className="flex items-start justify-between pb-3 border-b border-white/10">
                 <div className="flex items-center gap-2.5">
                   <div className="p-2.5 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                     <ShieldCheck className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-black text-white">ICICI Lombard Policy Details</h3>
+                    <h3 className="text-base sm:text-lg font-black text-white">ICICI Lombard Policy Details</h3>
                     <p className="text-xs text-red-200/80">Comprehensive 2-Wheeler EV Protection</p>
                   </div>
                 </div>
@@ -1245,16 +1239,18 @@ export default function VehicleDocsWallet() {
               <div className="space-y-3 text-xs">
                 <div className="p-3.5 rounded-2xl bg-black/40 border border-white/5 space-y-1">
                   <span className="text-[10px] uppercase font-mono text-slate-400">Policy Number</span>
-                  <p className="text-base font-mono font-black text-emerald-300">{OFFICIAL_BIKE_RC.rc_insurance_policy_no}</p>
+                  <p className="text-sm sm:text-base font-mono font-black text-emerald-300 truncate">
+                    {OFFICIAL_BIKE_RC.rc_insurance_policy_no}
+                  </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-0.5">
                     <span className="text-[10px] uppercase font-mono text-slate-400">Insurer</span>
                     <p className="text-xs font-bold text-white">{OFFICIAL_BIKE_RC.rc_insurance_comp}</p>
                   </div>
 
-                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                  <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-0.5">
                     <span className="text-[10px] uppercase font-mono text-slate-400">Validity Period</span>
                     <p className="text-xs font-mono font-black text-emerald-400">Valid till {OFFICIAL_BIKE_RC.rc_insurance_upto}</p>
                   </div>
@@ -1279,7 +1275,7 @@ export default function VehicleDocsWallet() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+              <div className="flex items-center justify-end gap-3 pt-2 border-t border-white/10">
                 <button
                   type="button"
                   onClick={() => setIsInsuranceModalOpen(false)}
@@ -1294,24 +1290,30 @@ export default function VehicleDocsWallet() {
         )}
 
       {/* =========================================================
-          OBEN 3-YEAR WARRANTY DETAILS MODAL (PORTALED DIRECTLY TO BODY)
+          OBEN 3-YEAR WARRANTY DETAILS MODAL (MOBILE BOTTOM-SHEET / DESKTOP CENTERED)
       ========================================================= */}
       {isWarrantyModalOpen &&
         createPortal(
           <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto animate-fade-in"
+            className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-md flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4 overflow-y-auto overscroll-contain animate-fade-in"
             onClick={(e) => {
               if (e.target === e.currentTarget) setIsWarrantyModalOpen(false);
             }}
           >
-            <div className="w-full max-w-lg clay-card-hero-red rounded-3xl p-6 sm:p-7 border border-red-500/30 shadow-2xl relative space-y-5 my-auto max-h-[90vh] overflow-y-auto">
+            <div
+              className="w-full sm:max-w-lg clay-card-hero-red rounded-t-[32px] sm:rounded-3xl p-5 sm:p-7 border-t sm:border border-red-500/30 shadow-2xl relative space-y-4 max-h-[90vh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] sm:pb-7 sheet-slide-up"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Mobile Drag Indicator */}
+              <div className="w-12 h-1.5 rounded-full bg-white/30 mx-auto sm:hidden -mt-1 mb-2" />
+
               <div className="flex items-start justify-between pb-3 border-b border-white/10">
                 <div className="flex items-center gap-2.5">
                   <div className="p-2.5 rounded-2xl bg-amber-500/20 text-amber-300 border border-amber-500/30">
                     <Sparkles className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-black text-white">Oben Rorr 3-Year Warranty</h3>
+                    <h3 className="text-base sm:text-lg font-black text-white">Oben Rorr 3-Year Warranty</h3>
                     <p className="text-xs text-red-200/80">Official Powertrain Coverage Breakdown</p>
                   </div>
                 </div>
@@ -1365,7 +1367,7 @@ export default function VehicleDocsWallet() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+              <div className="flex items-center justify-end gap-3 pt-2 border-t border-white/10">
                 <button
                   type="button"
                   onClick={() => setIsWarrantyModalOpen(false)}
@@ -1380,20 +1382,26 @@ export default function VehicleDocsWallet() {
         )}
 
       {/* =========================================================
-          GENERIC PREVIEW MODAL FOR USER UPLOADED FILES (PORTALED DIRECTLY TO BODY)
+          GENERIC PREVIEW MODAL FOR USER UPLOADED FILES (MOBILE BOTTOM-SHEET / DESKTOP CENTERED)
       ========================================================= */}
       {previewDoc &&
         createPortal(
           <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto animate-fade-in"
+            className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-md flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4 overflow-y-auto overscroll-contain animate-fade-in"
             onClick={(e) => {
               if (e.target === e.currentTarget) setPreviewDoc(null);
             }}
           >
-            <div className="w-full max-w-3xl clay-card-carbon rounded-3xl p-6 border border-red-500/30 shadow-2xl space-y-4 my-auto max-h-[90vh] flex flex-col">
+            <div
+              className="w-full sm:max-w-3xl clay-card-carbon rounded-t-[32px] sm:rounded-3xl p-5 sm:p-6 border-t sm:border border-red-500/30 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto overscroll-contain flex flex-col pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] sm:pb-6 sheet-slide-up"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Mobile Drag Indicator */}
+              <div className="w-12 h-1.5 rounded-full bg-white/20 mx-auto sm:hidden -mt-1 mb-2" />
+
               <div className="flex items-center justify-between pb-3 border-b border-white/10">
                 <div>
-                  <h3 className="font-black text-white text-base truncate max-w-md">{previewDoc.name}</h3>
+                  <h3 className="font-black text-white text-base truncate max-w-xs sm:max-w-md">{previewDoc.name}</h3>
                   <p className="text-xs text-red-300">{previewDoc.category} • Uploaded on {formatDateStr(previewDoc.uploadedAt)}</p>
                 </div>
 
@@ -1416,16 +1424,16 @@ export default function VehicleDocsWallet() {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-auto rounded-2xl bg-black/60 p-4 border border-white/5 flex items-center justify-center min-h-[300px]">
+              <div className="flex-1 overflow-auto rounded-2xl bg-black/60 p-3 sm:p-4 border border-white/5 flex items-center justify-center min-h-[260px] sm:min-h-[300px]">
                 {previewDoc.fileType?.startsWith("image/") || previewDoc.dataUrl?.startsWith("data:image/") ? (
                   <img
                     src={previewDoc.dataUrl}
                     alt={previewDoc.name}
-                    className="max-h-[70vh] max-w-full object-contain rounded-xl shadow-lg"
+                    className="max-h-[60vh] sm:max-h-[70vh] max-w-full object-contain rounded-xl shadow-lg"
                   />
                 ) : (
                   <div className="text-center space-y-3">
-                    <FileText className="w-16 h-16 text-red-400 mx-auto" />
+                    <FileText className="w-14 h-14 sm:w-16 sm:h-16 text-red-400 mx-auto" />
                     <p className="text-sm font-bold text-white">{previewDoc.fileName}</p>
                     <p className="text-xs text-slate-400">PDF document preview</p>
                     <a

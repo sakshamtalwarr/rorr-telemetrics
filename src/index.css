@@ -569,7 +569,27 @@ body {
         0.4s
         cubic-bezier(0.16, 1, 0.3, 1)
         both;
+}
 
+@keyframes sheetSlideUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0.7;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.sheet-slide-up {
+    animation: sheetSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (min-width: 640px) {
+    .sheet-slide-up {
+        animation: fadeInScale 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
 }
 
 
