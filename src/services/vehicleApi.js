@@ -154,6 +154,23 @@ export const vehicleApi = {
 
 
   // ===================================================
+  // TRIP PATH (GPS BREADCRUMBS)
+  // ===================================================
+
+  getTripPath(tripId) {
+
+    if (!tripId) {
+      throw new Error("tripId is required to fetch route breadcrumbs.");
+    }
+
+    return request(
+      `/api/vehicle/trip-path?tripId=${encodeURIComponent(tripId)}`
+    );
+
+  },
+
+
+  // ===================================================
   // ALERTS
   // ===================================================
 
