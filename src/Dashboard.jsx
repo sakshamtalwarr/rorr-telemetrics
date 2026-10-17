@@ -2,6 +2,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  useMemo,
 } from "react";
 
 import {
@@ -38,6 +39,7 @@ import GlassCard from "./components/common/GlassCard";
 import RedDustBackground from "./components/common/RedDustBackground";
 import useVehicleTelemetry from "./hooks/useVehicleTelemetry";
 import { vehicleApi } from "./services/vehicleApi";
+import { tripTracker } from "./services/tripTrackerService";
 
 // =====================================================
 // INITIAL GEOFENCE
@@ -92,6 +94,10 @@ export default function Dashboard({ profile, onLogout }) {
 
   const [alerts, setAlerts] = useState([]);
   const [trips, setTrips] = useState([]);
+  const [recordedTrips, setRecordedTrips] = useState([]);
+  const [selectedTrip, setSelectedTrip] = useState(null);
+  const [activeTrip, setActiveTrip] = useState(null);
+
   // Default to dark Red & Black theme for Red Oben Rorr Electric
   const [theme, setTheme] = useState("dark");
 
@@ -109,6 +115,62 @@ export default function Dashboard({ profile, onLogout }) {
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
+
+  const handleSelectTrip = useCallback((trip) => {
+    setSelectedTrip(trip);
+    navigateTo("map");
+  }, [navigateTo]);
+
+  // Load recorded trips and subscribe to live trip logger events
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadTrips() {
+      const stored = await tripTracker.getAllRecordedTrips();
+      if (isMounted) {
+        setRecordedTrips(stored);
+        if (tripTracker.activeTrip) {
+          setActiveTrip({ ...tripTracker.activeTrip });
+        }
+      }
+    }
+
+    loadTrips();
+
+    const unsub = tripTracker.subscribe((event, data) => {
+      if (event === "TRIP_STARTED" || event === "POINT_RECORDED") {
+        setActiveTrip({ ...data });
+      } else if (event === "TRIP_COMPLETED") {
+        setActiveTrip(null);
+        tripTracker.getAllRecordedTrips().then(setRecordedTrips);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      unsub();
+    };
+  }, []);
+
+  // Ingest live telemetry frames into tripTracker to automatically record rides
+  useEffect(() => {
+    if (liveData) {
+      tripTracker.processTelemetry(liveData);
+    }
+  }, [liveData]);
+
+  // Merge recorded local trips with cloud trips from Oben Argus API
+  const allDisplayTrips = useMemo(() => {
+    const combined = [...recordedTrips];
+    if (Array.isArray(trips)) {
+      trips.forEach((ct) => {
+        if (!combined.some((rt) => rt.tripId === ct.tripId || rt.tripId === ct.id)) {
+          combined.push(ct);
+        }
+      });
+    }
+    return combined;
+  }, [recordedTrips, trips]);
 
   useEffect(() => {
     function handleHashChange() {
@@ -708,7 +770,7 @@ export default function Dashboard({ profile, onLogout }) {
         {activePage === "map" && (
           <div className="space-y-6 fade-in-scale">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Full Interactive Map */}
+              {/* Full Interactive Map with Route-Wise Trip Tracker */}
               <div className="lg:col-span-8 min-w-0">
                 <LiveMap
                   onGeofenceMove={changeGeofenceLocation}
@@ -724,6 +786,10 @@ export default function Dashboard({ profile, onLogout }) {
                   odometer={liveData?.odometer}
                   packetCreatedAt={liveData?.packetCreatedAt}
                   history={liveData?.history || []}
+                  trips={allDisplayTrips}
+                  selectedTrip={selectedTrip}
+                  onSelectTrip={setSelectedTrip}
+                  activeTrip={activeTrip}
                 />
               </div>
 
@@ -750,11 +816,18 @@ export default function Dashboard({ profile, onLogout }) {
         ========================================================= */}
         {activePage === "rides" && (
           <div className="space-y-6 fade-in-scale">
-            <TripHistory liveData={liveData} trips={trips} />
+            <TripHistory
+              liveData={liveData}
+              trips={allDisplayTrips}
+              onSelectTrip={handleSelectTrip}
+            />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <RidingTrends />
-              <TripLogs trips={trips} />
+              <TripLogs
+                trips={allDisplayTrips}
+                onSelectTrip={handleSelectTrip}
+              />
             </div>
 
             <VehicleActivity />

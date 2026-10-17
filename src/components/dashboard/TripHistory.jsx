@@ -34,12 +34,21 @@ import "leaflet/dist/leaflet.css";
 const DEFAULT_LAT = 12.9977986667;
 const DEFAULT_LNG = 77.5800862667;
 
-export default function TripHistory({ liveData, trips = [] }) {
+export default function TripHistory({ liveData, trips = [], onSelectTrip }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const polylineRef = useRef(null);
+  const startMarkerRef = useRef(null);
+  const endMarkerRef = useRef(null);
 
   const [activeGraphMode, setActiveGraphMode] = useState("trips"); // "trips" | "live"
+  const [selectedPreviewTrip, setSelectedPreviewTrip] = useState(() => (trips.length > 0 ? trips[0] : null));
+
+  useEffect(() => {
+    if (!selectedPreviewTrip && trips.length > 0) {
+      setSelectedPreviewTrip(trips[0]);
+    }
+  }, [trips, selectedPreviewTrip]);
 
   const history = liveData?.history || [];
   const routeHistory = liveData?.routeHistory || [];
@@ -67,13 +76,20 @@ export default function TripHistory({ liveData, trips = [] }) {
       ? session.maxSoc
       : liveData?.soc || 0;
 
-  // Extract Route Coordinates
-  const routeCoordinates = routeHistory
-    .filter(
-      (point) =>
-        Number.isFinite(point.latitude) && Number.isFinite(point.longitude)
-    )
-    .map((point) => [point.latitude, point.longitude]);
+  // Extract Route Coordinates (from selected preview trip or live rolling route history)
+  const routeCoordinates = useMemo(() => {
+    if (selectedPreviewTrip && Array.isArray(selectedPreviewTrip.points) && selectedPreviewTrip.points.length > 1) {
+      return selectedPreviewTrip.points
+        .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng))
+        .map((p) => [p.lat, p.lng]);
+    }
+    return routeHistory
+      .filter(
+        (point) =>
+          Number.isFinite(point.latitude) && Number.isFinite(point.longitude)
+      )
+      .map((point) => [point.latitude, point.longitude]);
+  }, [selectedPreviewTrip, routeHistory]);
 
   // Leaflet Map Initialization with Dark Tiles
   useEffect(() => {
@@ -106,21 +122,56 @@ export default function TripHistory({ liveData, trips = [] }) {
 
     const map = mapInstanceRef.current;
 
-    // Update Route Polyline
+    // Remove previous markers & route polyline
     if (polylineRef.current) {
       polylineRef.current.remove();
       polylineRef.current = null;
     }
+    if (startMarkerRef.current) {
+      startMarkerRef.current.remove();
+      startMarkerRef.current = null;
+    }
+    if (endMarkerRef.current) {
+      endMarkerRef.current.remove();
+      endMarkerRef.current = null;
+    }
 
     if (routeCoordinates.length > 1) {
       const polyline = L.polyline(routeCoordinates, {
-        color: "#DC2626", // Volcanic Red route
-        weight: 4,
-        opacity: 0.9,
+        color: "#EF4444", // Volcanic Red route
+        weight: 5,
+        opacity: 0.95,
+        lineCap: "round",
+        lineJoin: "round",
       }).addTo(map);
 
       polylineRef.current = polyline;
-      map.fitBounds(polyline.getBounds(), { padding: [25, 25] });
+
+      // Start pin
+      const startP = routeCoordinates[0];
+      const startM = L.circleMarker(startP, {
+        radius: 7,
+        fillColor: "#10B981",
+        color: "#FFFFFF",
+        weight: 2,
+        fillOpacity: 1,
+      }).addTo(map);
+      startM.bindTooltip("🟢 Origin", { permanent: false, direction: "top" });
+      startMarkerRef.current = startM;
+
+      // Finish pin
+      const endP = routeCoordinates[routeCoordinates.length - 1];
+      const endM = L.circleMarker(endP, {
+        radius: 7,
+        fillColor: "#EF4444",
+        color: "#FFFFFF",
+        weight: 2,
+        fillOpacity: 1,
+      }).addTo(map);
+      endM.bindTooltip("🏁 Destination", { permanent: false, direction: "top" });
+      endMarkerRef.current = endM;
+
+      map.fitBounds(polyline.getBounds(), { padding: [30, 30] });
     }
 
     return () => {
@@ -454,18 +505,63 @@ export default function TripHistory({ liveData, trips = [] }) {
       </div>
 
       {/* GPS ROUTE TRAIL MAP */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
+      <div className="space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-red-400" />
             <h4 className="font-bold text-white text-sm">
               Session Route GPS Trace
             </h4>
+            {selectedPreviewTrip && (
+              <span className="text-xs font-mono text-red-400 font-bold px-2 py-0.5 rounded-md bg-red-950/60 border border-red-500/30">
+                {selectedPreviewTrip.title || `${selectedPreviewTrip.startLocationName || "Origin"} ➔ ${selectedPreviewTrip.endLocationName || "Destination"}`}
+              </span>
+            )}
           </div>
-          <span className="text-xs font-mono text-slate-400">
-            {routeCoordinates.length} GPS Points Recorded
-          </span>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono text-slate-400">
+              {routeCoordinates.length} GPS Points Recorded
+            </span>
+            {onSelectTrip && selectedPreviewTrip && (
+              <button
+                type="button"
+                onClick={() => onSelectTrip(selectedPreviewTrip)}
+                className="px-2.5 py-1 rounded-xl bg-red-600/30 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/40 text-xs font-bold transition-all flex items-center gap-1 active:scale-95"
+              >
+                <span>Open Full Map</span>
+                <span>→</span>
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* TRIP SELECTOR CHIPS */}
+        {Array.isArray(trips) && trips.length > 0 && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
+            {trips.slice(0, 8).map((t, idx) => {
+              const isSelected = selectedPreviewTrip?.tripId === t.tripId || (!selectedPreviewTrip && idx === 0);
+              const label = t.title || (t.startLocationName && t.endLocationName ? `${t.startLocationName} ➔ ${t.endLocationName}` : `Trip #${idx + 1}`);
+
+              return (
+                <button
+                  key={t.tripId || idx}
+                  type="button"
+                  onClick={() => setSelectedPreviewTrip(t)}
+                  className={`
+                    shrink-0 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all border flex items-center gap-1.5
+                    ${isSelected
+                      ? "bg-red-600 text-white border-red-500 shadow-sm"
+                      : "bg-black/60 text-slate-400 border-white/10 hover:text-white hover:border-red-500/30"}
+                  `}
+                >
+                  <span className="line-clamp-1 max-w-[140px] sm:max-w-[180px]">{label}</span>
+                  <span className="font-mono text-[9px] opacity-80">{t.distanceKm || t.tripDistance || 0} km</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         <div className="h-[260px] sm:h-[300px] w-full rounded-2xl overflow-hidden border border-red-500/20 relative shadow-inner bg-[#0B0C12]">
           <ErrorBoundary>
