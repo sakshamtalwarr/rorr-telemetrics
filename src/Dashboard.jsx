@@ -197,13 +197,40 @@ export default function Dashboard({ profile, onLogout }) {
     liveData?.vehicleId ||
     null;
 
+  const [tripFilter, setTripFilter] = useState({
+    preset: "sept_oct",
+    from: "2026-09-25",
+    to: "2026-10-18",
+    label: "30 Sep & 1 Oct Rides",
+  });
+
+  const changeTripFilter = useCallback(async (newFilter) => {
+    setTripFilter(newFilter);
+    try {
+      const response = await vehicleApi.getTrips({
+        from: newFilter.from,
+        to: newFilter.to,
+        pageSize: 50,
+      });
+      if (Array.isArray(response?.data)) {
+        setTrips(response.data);
+      }
+    } catch (err) {
+      console.warn("Trip filter fetch error:", err);
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
     async function loadDashboard() {
       try {
         const [tripsResponse, alertsResponse] = await Promise.all([
-          vehicleApi.getTrips(),
+          vehicleApi.getTrips({
+            from: "2026-09-25",
+            to: "2026-10-18",
+            pageSize: 50,
+          }),
           vehicleApi.getAlerts(),
         ]);
 
@@ -820,6 +847,8 @@ export default function Dashboard({ profile, onLogout }) {
               liveData={liveData}
               trips={allDisplayTrips}
               onSelectTrip={handleSelectTrip}
+              tripFilter={tripFilter}
+              onFilterChange={changeTripFilter}
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -827,6 +856,8 @@ export default function Dashboard({ profile, onLogout }) {
               <TripLogs
                 trips={allDisplayTrips}
                 onSelectTrip={handleSelectTrip}
+                tripFilter={tripFilter}
+                onFilterChange={changeTripFilter}
               />
             </div>
 

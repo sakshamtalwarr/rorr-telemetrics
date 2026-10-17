@@ -34,7 +34,13 @@ import "leaflet/dist/leaflet.css";
 const DEFAULT_LAT = 12.9977986667;
 const DEFAULT_LNG = 77.5800862667;
 
-export default function TripHistory({ liveData, trips = [], onSelectTrip }) {
+export default function TripHistory({
+  liveData,
+  trips = [],
+  onSelectTrip,
+  tripFilter = null,
+  onFilterChange = null,
+}) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const polylineRef = useRef(null);

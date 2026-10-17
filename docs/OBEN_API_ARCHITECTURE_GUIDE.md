@@ -451,21 +451,72 @@ query StopFallDetectionNotificationTimer($jobId: String!) {
 
 ---
 
-## 7. Analytics & Trip History (REST APIs)
+## 7. Analytics & Trip Tracking Architecture (Decompiled APK Deep Dive)
 
-### 7.1 Filtered Trips List
+Trip tracking is handled through an end-to-end pipeline connecting the motorcycle’s onboard hardware, the cloud telematics backend, and the mobile client:
+
+### 7.1 End-to-End Tracking Architecture
+
+```text
++-----------------------------------------------------------+
+|                  Motorcycle Hardware (TCU)                |
+|  - CAN Bus (BMS, Motor Controller, Odometer)              |
+|  - GPS / GNSS Receiver (Latitude, Longitude, Heading)     |
+|  - 4G LTE eSIM (MQTT / TCP Telemetry Uplink)              |
++-----------------------------+-----------------------------+
+                              | Cellular Data (MQTT / TCP)
+                              v
++-----------------------------------------------------------+
+|                 Cloud Telematics Ingestion                |
+|  - Trip Boundary Detection (Ignition ON -> Ignition OFF)  |
+|  - Coordinate Smoothing & Distance Calculation            |
+|  - Analytics & Carbon Offset Calculation                  |
++-----------------------------+-----------------------------+
+                              | REST / GraphQL APIs
+                              v
++-----------------------------------------------------------+
+|               Oben Electric Mobile Client                 |
+|  - Screen: (main)/myRide.tsx & (main)/tripDetails.tsx     |
+|  - Screen: (tabs)/analytics.tsx                           |
+|  - Map Route Polyline: getTripVehiclePath                 |
+|  - Aggregated Metrics: getAllTripsbyFilter                |
++-----------------------------------------------------------+
+```
+
+### 7.2 How Trips Are Detected & Recorded (On the Bike)
+1. **Trip Start Trigger:**
+   - The TCU detects an `ignitionStatus: true` event or wheel rotation from the motor controller via the CAN bus.
+   - It captures the starting odometer reading, initial Battery SOC, timestamp, and starting GPS coordinates.
+2. **In-Ride Data Logging:**
+   - While moving, the TCU continuously logs coordinates, speed, battery draw, and heading at periodic intervals (1–5 seconds).
+   - If cellular connectivity is temporarily lost (tunnels, underground parking), data is buffered in local flash memory on the TCU and uploaded upon reconnect.
+3. **Trip End Trigger:**
+   - When the key/ignition is turned off (`ignitionStatus: false`) or the vehicle remains stationary with zero speed for a defined timeout (usually 5–10 minutes), the trip is marked as completed.
+   - The final odometer reading, end GPS coordinates, and ending SOC are recorded.
+
+### 7.3 Backend Analytics & Carbon Calculation
+- **Distance Traveled:** Calculated primarily from the bike's wheel-speed sensors / odometer delta on the CAN bus (which is more accurate than raw GPS distance), supplemented by GPS point aggregation.
+- **Speed Profile:** Calculates top speed and average moving speed ($v_{avg} = \frac{\Delta distance}{moving\_time}$).
+- **Battery & Energy Consumption:** $\Delta SOC = Initial\_SOC - Ending\_SOC$, converted into estimated energy consumed (in Watt-hours or kWh).
+- **Carbon ($CO_2$) Savings:** Compares electric energy consumed against the average fuel consumption of an equivalent 125cc–150cc petrol motorcycle to calculate grams of $CO_2$ saved ($\sim 25\text{g } CO_2\text{ / km}$).
+- **Reverse Geocoding:** Start and end GPS coordinates are converted into readable neighborhood/city names using Google Maps Geocoding (`/external-api`).
+
+### 7.4 REST Endpoints & Screen Bindings
+
+#### 1. Filtered Trips List (`getAllTripsbyFilter`)
+- **Invoked by:** `(tabs)/analytics.tsx` and `(main)/myRide.tsx`
 - **Endpoint:** `GET /analytics-service/trips/getAllTripsbyFilter?IMEI={imei}&fromDate={from}&toDate={to}&page=1&pageSize=50`
-- **Headers:** `Authorization: Bearer <accessToken>`
+- **Date Filtering:** Querying by specific dates is required because the backend filters strictly between `fromDate` and `toDate`. For example, querying with `from=2026-09-25&to=2026-10-18` returns rides completed on 30 September and 1 October.
 
-### 7.2 Single User Trip Distance & Metrics
+#### 2. Route Map & Path (`getTripVehiclePath`)
+- **Invoked by:** `(main)/tripDetails.tsx` when tapping a trip card
+- **Endpoint:** `GET /analytics-service/trips/getTripVehiclePath?tripId={selectedTripId}`
+- **Response:** Ordered array of `[latitude, longitude, speed, timestamp]` breadcrumbs rendered as a glowing colored polyline on the map view.
+
+#### 3. Single User Trip Distance & Metrics
 - **Endpoint:** `GET /analytics-service/trips/getVehicleTripsOfSingleUser?IMEI={imei}&fromDate={from}&toDate={to}`
-- **Response:** Distance (km), average speed, top speed, SOC consumed, carbon saved ($CO_2$).
 
-### 7.3 Trip Route GPS Breadcrumbs
-- **Endpoint:** `GET /analytics-service/trips/getTripVehiclePath?tripId={id}`
-- **Response:** Coordinate array of `[lat, lng, timestamp, speed]` forming the route polyline.
-
-### 7.4 Today's Distance
+#### 4. Today's Travelled Distance
 - **Endpoint:** `GET /analytics-service/trips/getTodayTravelledTripsDistance?IMEI={imei}`
 
 ---
