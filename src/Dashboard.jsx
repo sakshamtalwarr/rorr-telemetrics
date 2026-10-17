@@ -103,7 +103,14 @@ export default function Dashboard({ profile, onLogout }) {
   const { liveData, connectionStatus } = useVehicleTelemetry();
 
   const [alerts, setAlerts] = useState([]);
-  const [trips, setTrips] = useState([]);
+  const [trips, setTrips] = useState(() => {
+    try {
+      const cached = localStorage.getItem("oben_trips_cache");
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   const [recordedTrips, setRecordedTrips] = useState(() => tripTracker.getInitialTrips());
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [activeTrip, setActiveTrip] = useState(null);
@@ -208,8 +215,8 @@ export default function Dashboard({ profile, onLogout }) {
       return tB - tA;
     });
 
-    // Filter by tripFilter with IST day boundaries
-    if (tripFilter?.from && tripFilter?.to) {
+    // Filter by tripFilter with IST day boundaries (unless preset is "all")
+    if (tripFilter?.preset && tripFilter.preset !== "all" && tripFilter?.from && tripFilter?.to) {
       const fromTime = new Date(`${tripFilter.from}T00:00:00+05:30`).getTime();
       const toTime = new Date(`${tripFilter.to}T23:59:59.999+05:30`).getTime();
 
@@ -269,6 +276,9 @@ export default function Dashboard({ profile, onLogout }) {
               merged.push(item);
             }
           });
+          try {
+            localStorage.setItem("oben_trips_cache", JSON.stringify(merged));
+          } catch {}
           return merged;
         });
       }
@@ -280,36 +290,41 @@ export default function Dashboard({ profile, onLogout }) {
   useEffect(() => {
     let cancelled = false;
 
-    async function loadDashboard() {
-      try {
-        const [tripsResponse, alertsResponse] = await Promise.all([
-          vehicleApi.getTrips({
-            from: "2026-09-01",
-            to: "2026-10-31",
-            pageSize: 100,
-          }),
-          vehicleApi.getAlerts(),
-        ]);
-
+    // 1. Fetch Trips independently & immediately
+    vehicleApi
+      .getTrips({
+        from: "2026-08-01",
+        to: "2026-10-31",
+        pageSize: 100,
+      })
+      .then((res) => {
         if (cancelled) return;
-
-        const list = extractTripsList(tripsResponse);
+        const list = extractTripsList(res);
         if (list.length > 0) {
           setTrips(list);
+          try {
+            localStorage.setItem("oben_trips_cache", JSON.stringify(list));
+          } catch {}
         }
+      })
+      .catch((err) => {
+        console.warn("⚠️ Trips API fetch error:", err);
+      });
 
-        const alertData = alertsResponse?.data?.getAlertLogsByImei?.data;
+    // 2. Fetch Alerts independently with its own error boundary
+    vehicleApi
+      .getAlerts()
+      .then((res) => {
+        if (cancelled) return;
+        const alertData = res?.data?.getAlertLogsByImei?.data;
         if (Array.isArray(alertData)) {
           setAlerts(alertData);
         }
-      } catch (error) {
-        if (!cancelled) {
-          console.error("❌ Dashboard loading failed:", error);
-        }
-      }
-    }
+      })
+      .catch((err) => {
+        console.warn("⚠️ Alerts API fetch error:", err);
+      });
 
-    loadDashboard();
     return () => {
       cancelled = true;
     };
