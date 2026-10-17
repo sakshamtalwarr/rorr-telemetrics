@@ -240,16 +240,22 @@ function createRoutePoint(
   data
 ) {
 
-  const latitude =
+  let latitude =
     toNumber(
       data.latitude
     );
 
-  const longitude =
+  let longitude =
     toNumber(
       data.longitude
     );
 
+  // Auto-correct inverted [lng, lat] GeoJSON coordinates for India
+  if (latitude > 60 && longitude < 40) {
+    const tmp = latitude;
+    latitude = longitude;
+    longitude = tmp;
+  }
 
   if (
     latitude === 0 ||
@@ -344,12 +350,14 @@ function normalizeTelemetry(
     // -----------------------------------------------
 
     latitude:
-      data.latitude ??
-      previous.latitude,
+      (data.latitude !== undefined && data.longitude !== undefined && toNumber(data.latitude) > 60 && toNumber(data.longitude) < 40)
+        ? toNumber(data.longitude)
+        : (data.latitude ?? previous.latitude),
 
     longitude:
-      data.longitude ??
-      previous.longitude,
+      (data.latitude !== undefined && data.longitude !== undefined && toNumber(data.latitude) > 60 && toNumber(data.longitude) < 40)
+        ? toNumber(data.latitude)
+        : (data.longitude ?? previous.longitude),
 
 
     // -----------------------------------------------

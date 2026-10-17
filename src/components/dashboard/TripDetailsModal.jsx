@@ -25,7 +25,8 @@ import {
   formatDuration,
 } from "../../utils/dateUtils";
 import { fetchRoadRoute } from "../../services/roadRouteService";
-import { getBangaloreAreaName } from "../../utils/locationUtils";
+import { getAreaName } from "../../utils/locationUtils";
+import { tripTracker } from "../../services/tripTrackerService";
 
 // Volcanic Red & Black Leaflet Markers
 const startPinIcon = L.divIcon({
@@ -150,105 +151,172 @@ export default function TripDetailsModal({
   const endTimeStr = formatISTTime(endDate);
   const tripDateStr = formatISTDate(startDate);
 
-  // Extract Route Coordinates directly from real trip breadcrumbs or real start/end coordinates
-  const routePoints = useMemo(() => {
-    if (Array.isArray(trip?.points) && trip.points.length > 0) {
-      return trip.points
-        .filter((p) => Number.isFinite(p?.lat ?? p?.latitude) && Number.isFinite(p?.lng ?? p?.longitude))
-        .map((p) => [Number(p.lat ?? p.latitude), Number(p.lng ?? p.longitude)]);
+  // Cloud GPS breadcrumbs fetched directly from Oben server (/analytics-service/trips/getTripVehiclePath)
+  const [cloudPoints, setCloudPoints] = useState(() => (Array.isArray(trip?.points) && trip.points.length > 0 ? trip.points : null));
+  const [loadingPoints, setLoadingPoints] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (Array.isArray(trip?.points) && trip.points.length > 1) {
+      setCloudPoints(trip.points);
+      return;
     }
 
-    const sLat = Number(trip?.startLatitude ?? trip?.startLocation?.coordinates?.[1]);
-    const sLng = Number(trip?.startLongitude ?? trip?.startLocation?.coordinates?.[0]);
-    const eLat = Number(trip?.endLatitude ?? trip?.endLocation?.coordinates?.[1]);
-    const eLng = Number(trip?.endLongitude ?? trip?.endLocation?.coordinates?.[0]);
+    const tripId = trip?.tripId || trip?.id || trip?._id;
+    if (tripId) {
+      setLoadingPoints(true);
+      tripTracker
+        .fetchAndNormalizeCloudTripPath(tripId)
+        .then((pts) => {
+          if (!cancelled) {
+            setLoadingPoints(false);
+            if (pts && pts.length > 0) {
+              setCloudPoints(pts);
+            }
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setLoadingPoints(false);
+        });
+    }
 
-    if (Number.isFinite(sLat) && Number.isFinite(sLng)) {
-      if (Number.isFinite(eLat) && Number.isFinite(eLng)) {
+    return () => {
+      cancelled = true;
+    };
+  }, [trip]);
+
+  // Extract Route Coordinates directly from real trip breadcrumbs or real start/end coordinates
+  const routePoints = useMemo(() => {
+    const rawList = cloudPoints || trip?.points;
+    if (Array.isArray(rawList) && rawList.length > 0) {
+      const valid = rawList
+        .map((p) => {
+          let lat = Number(p?.lat ?? p?.latitude);
+          let lng = Number(p?.lng ?? p?.longitude ?? p?.lon);
+          if (lat > 60 && lng < 40) {
+            const temp = lat;
+            lat = lng;
+            lng = temp;
+          }
+          return [lat, lng];
+        })
+        .filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng) && lat !== 0 && lng !== 0);
+
+      if (valid.length > 0) return valid;
+    }
+
+    let sLat = Number(trip?.startLatitude ?? trip?.startLocation?.coordinates?.[1]);
+    let sLng = Number(trip?.startLongitude ?? trip?.startLocation?.coordinates?.[0]);
+    let eLat = Number(trip?.endLatitude ?? trip?.endLocation?.coordinates?.[1]);
+    let eLng = Number(trip?.endLongitude ?? trip?.endLocation?.coordinates?.[0]);
+
+    if (sLat > 60 && sLng < 40) { const t = sLat; sLat = sLng; sLng = t; }
+    if (eLat > 60 && eLng < 40) { const t = eLat; eLat = eLng; eLng = t; }
+
+    if (Number.isFinite(sLat) && Number.isFinite(sLng) && sLat !== 0 && sLng !== 0) {
+      if (Number.isFinite(eLat) && Number.isFinite(eLng) && eLat !== 0 && eLng !== 0) {
         return [[sLat, sLng], [eLat, eLng]];
       }
       return [[sLat, sLng]];
     }
 
-    // Authentic Bengaluru home origin (Kumara Park / Guttahalli)
-    return [[12.9978, 77.5812]];
-  }, [trip]);
+    return [];
+  }, [trip, cloudPoints]);
 
-  // Authentic Location strings (Real addresses or exact GPS coordinates in Bengaluru)
+  // Authentic Location strings from real GPS coordinates
   const startAddress = useMemo(() => {
-    if (trip?.startAddress) return trip.startAddress;
-    if (trip?.startLocationName) return trip.startLocationName;
-    const sLat = Number(trip?.startLatitude ?? trip?.startLocation?.coordinates?.[1] ?? routePoints[0]?.[0]);
-    const sLng = Number(trip?.startLongitude ?? trip?.startLocation?.coordinates?.[0] ?? routePoints[0]?.[1]);
-    const area = getBangaloreAreaName(sLat, sLng);
-    if (area) {
-      return `${area}, Bengaluru, Karnataka`;
+    if (trip?.startAddress && !trip.startAddress.includes("Kumara Park") && !trip.startAddress.includes("Bengaluru")) {
+      return trip.startAddress;
     }
-    if (Number.isFinite(sLat) && Number.isFinite(sLng) && sLat !== 0 && sLng !== 0) {
-      return `GPS: ${sLat.toFixed(5)}° N, ${sLng.toFixed(5)}° E (Bengaluru)`;
+    if (trip?.startLocationName && !trip.startLocationName.includes("Kumara Park") && !trip.startLocationName.includes("Bengaluru")) {
+      return trip.startLocationName;
     }
-    return "Bengaluru Urban, Karnataka";
+    let sLat = Number(trip?.startLatitude ?? trip?.startLocation?.coordinates?.[1] ?? routePoints[0]?.[0]);
+    let sLng = Number(trip?.startLongitude ?? trip?.startLocation?.coordinates?.[0] ?? routePoints[0]?.[1]);
+    if (sLat > 60 && sLng < 40) { const t = sLat; sLat = sLng; sLng = t; }
+
+    if (!Number.isFinite(sLat) || !Number.isFinite(sLng) || (sLat === 0 && sLng === 0)) {
+      return "Origin Location";
+    }
+
+    const area = getAreaName(sLat, sLng);
+    return area || `GPS: ${sLat.toFixed(5)}° N, ${sLng.toFixed(5)}° E`;
   }, [trip, routePoints]);
 
   const endAddress = useMemo(() => {
-    if (trip?.endAddress) return trip.endAddress;
-    if (trip?.endLocationName) return trip.endLocationName;
-    const eLat = Number(trip?.endLatitude ?? trip?.endLocation?.coordinates?.[1] ?? routePoints[routePoints.length - 1]?.[0]);
-    const eLng = Number(trip?.endLongitude ?? trip?.endLocation?.coordinates?.[0] ?? routePoints[routePoints.length - 1]?.[1]);
-    const area = getBangaloreAreaName(eLat, eLng);
-    if (area) {
-      return `${area}, Bengaluru, Karnataka`;
+    if (trip?.endAddress && !trip.endAddress.includes("Kumara Park") && !trip.endAddress.includes("Bengaluru")) {
+      return trip.endAddress;
     }
-    if (Number.isFinite(eLat) && Number.isFinite(eLng) && eLat !== 0 && eLng !== 0) {
-      return `GPS: ${eLat.toFixed(5)}° N, ${eLng.toFixed(5)}° E (Bengaluru)`;
+    if (trip?.endLocationName && !trip.endLocationName.includes("Kumara Park") && !trip.endLocationName.includes("Bengaluru")) {
+      return trip.endLocationName;
     }
-    return "Bengaluru Urban, Karnataka";
+    let eLat = Number(trip?.endLatitude ?? trip?.endLocation?.coordinates?.[1] ?? routePoints[routePoints.length - 1]?.[0]);
+    let eLng = Number(trip?.endLongitude ?? trip?.endLocation?.coordinates?.[0] ?? routePoints[routePoints.length - 1]?.[1]);
+    if (eLat > 60 && eLng < 40) { const t = eLat; eLat = eLng; eLng = t; }
+
+    if (!Number.isFinite(eLat) || !Number.isFinite(eLng) || (eLat === 0 && eLng === 0)) {
+      return "Destination Point";
+    }
+
+    const area = getAreaName(eLat, eLng);
+    return area || `GPS: ${eLat.toFixed(5)}° N, ${eLng.toFixed(5)}° E`;
   }, [trip, routePoints]);
 
   // Ride tip
   const rideTip =
     trip?.rideTip ||
     (maxSpeed > 80
-      ? "High peak acceleration observed. Smooth throttle input yields maximum range in Havoc mode."
-      : "Do not over accelerate or apply harsh braking");
+      ? "Peak acceleration recorded. Smooth throttle input yields maximum range in Havoc mode."
+      : "Smooth riding detected. Maintain consistent throttle for optimal battery efficiency.");
 
   // Battery & Ignition from liveData or trip
-  const batterySoc = liveData?.soc ?? trip?.startSOC ?? trip?.startSoc ?? 36;
+  const batterySoc = liveData?.soc ?? trip?.startSOC ?? trip?.startSoc ?? null;
   const isIgnitionOn = liveData?.ignition ?? false;
 
-  // State for realistic road-following geometry (OSRM)
+  // Real vehicle trajectory (prioritizing real GPS breadcrumbs)
   const [roadRoute, setRoadRoute] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function loadRoadRoute() {
-      if (Array.isArray(trip?.points) && trip.points.length > 3) {
-        const pts = trip.points
-          .filter((p) => Number.isFinite(p?.lat ?? p?.latitude) && Number.isFinite(p?.lng ?? p?.longitude))
-          .map((p) => [Number(p.lat ?? p.latitude), Number(p.lng ?? p.longitude)]);
-        if (pts.length > 1) {
-          setRoadRoute(pts);
-          return;
-        }
-      }
-
-      const sLat = Number(trip?.startLatitude ?? trip?.startLocation?.coordinates?.[1] ?? 12.9978);
-      const sLng = Number(trip?.startLongitude ?? trip?.startLocation?.coordinates?.[0] ?? 77.5812);
-      const eLat = Number(trip?.endLatitude ?? trip?.endLocation?.coordinates?.[1] ?? sLat);
-      const eLng = Number(trip?.endLongitude ?? trip?.endLocation?.coordinates?.[0] ?? sLng);
-
-      const snapped = await fetchRoadRoute(sLat, sLng, eLat, eLng);
-      if (!cancelled && snapped && snapped.length > 0) {
-        setRoadRoute(snapped);
-      }
+    // 1. If we have actual GPS breadcrumbs (>= 2 points), use real bike telemetry directly!
+    if (routePoints.length >= 2) {
+      setRoadRoute(routePoints);
+      return;
     }
 
-    loadRoadRoute();
+    // 2. Only if we have solely start & end coordinates and no intermediate breadcrumbs
+    let sLat = Number(trip?.startLatitude ?? trip?.startLocation?.coordinates?.[1]);
+    let sLng = Number(trip?.startLongitude ?? trip?.startLocation?.coordinates?.[0]);
+    let eLat = Number(trip?.endLatitude ?? trip?.endLocation?.coordinates?.[1]);
+    let eLng = Number(trip?.endLongitude ?? trip?.endLocation?.coordinates?.[0]);
+
+    if (sLat > 60 && sLng < 40) { const t = sLat; sLat = sLng; sLng = t; }
+    if (eLat > 60 && eLng < 40) { const t = eLat; eLat = eLng; eLng = t; }
+
+    if (
+      Number.isFinite(sLat) &&
+      Number.isFinite(sLng) &&
+      Number.isFinite(eLat) &&
+      Number.isFinite(eLng) &&
+      sLat !== 0 &&
+      sLng !== 0 &&
+      eLat !== 0 &&
+      eLng !== 0
+    ) {
+      fetchRoadRoute(sLat, sLng, eLat, eLng).then((snapped) => {
+        if (!cancelled && snapped && snapped.length > 0) {
+          setRoadRoute(snapped);
+        }
+      });
+    } else {
+      setRoadRoute([]);
+    }
+
     return () => {
       cancelled = true;
     };
-  }, [trip]);
+  }, [trip, routePoints]);
 
   const activePath = roadRoute.length > 0 ? roadRoute : routePoints;
 
@@ -261,7 +329,11 @@ export default function TripDetailsModal({
         delete mapContainerRef.current._leaflet_id;
       }
 
-      const initialCenter = activePath.length > 0 ? activePath[0] : [12.9978, 77.5812];
+      const defaultCenter = [
+        Number(liveData?.latitude) || 28.6139,
+        Number(liveData?.longitude) || 77.2090,
+      ];
+      const initialCenter = activePath.length > 0 ? activePath[0] : defaultCenter;
 
       const map = L.map(mapContainerRef.current, {
         zoomControl: false,
@@ -270,7 +342,6 @@ export default function TripDetailsModal({
       }).setView(initialCenter, 13);
 
       // 100% Free, Zero API Key, Zero Watermark Esri Dark Canvas
-      // maxNativeZoom: 16 prevents Esri from returning "Map data not yet available" placeholder tiles
       L.tileLayer(
         "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
         {
@@ -452,24 +523,20 @@ export default function TripDetailsModal({
             </div>
           </button>
 
-          {/* Right Status Badges matching official app */}
+          {/* Right Status Badges */}
           <div className="flex items-center gap-2">
             {/* Battery Pill */}
-            <div className="flex items-center gap-1 bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 rounded-xl text-xs font-mono font-bold text-amber-300">
-              <span>{batterySoc}%</span>
-              <Zap className="w-3 h-3 text-amber-400 fill-amber-400" />
-            </div>
+            {batterySoc !== null && (
+              <div className="flex items-center gap-1 bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 rounded-xl text-xs font-mono font-bold text-amber-300">
+                <span>{batterySoc}%</span>
+                <Zap className="w-3 h-3 text-amber-400 fill-amber-400" />
+              </div>
+            )}
 
             {/* Lock State */}
             <div className="flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-xl bg-black/60 border border-white/10 text-slate-300">
               <Lock className="w-3 h-3 text-slate-400" />
               <span>{isIgnitionOn ? "ON" : "OFF"}</span>
-            </div>
-
-            {/* Notification Bell */}
-            <div className="p-1 text-red-400 relative">
-              <Bell className="w-4 h-4" />
-              <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[8px] font-black rounded-full px-1">99+</span>
             </div>
           </div>
         </header>
@@ -482,6 +549,14 @@ export default function TripDetailsModal({
             <div ref={mapContainerRef} className="w-full h-full z-0" />
           </ErrorBoundary>
 
+          {/* Loading Cloud GPS breadcrumbs indicator */}
+          {loadingPoints && (
+            <div className="absolute top-3 left-3 z-[1000] px-3 py-1 rounded-xl bg-black/85 text-xs font-mono text-red-400 border border-red-500/40 backdrop-blur-md flex items-center gap-2 shadow-lg">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+              <span>Loading TCU breadcrumbs...</span>
+            </div>
+          )}
+
           {/* Crosshair / Recenter Button */}
           <button
             type="button"
@@ -492,9 +567,9 @@ export default function TripDetailsModal({
             <Crosshair className="w-4 h-4" />
           </button>
 
-          {/* Branding Badge */}
+          {/* Branding Badge with real points count */}
           <div className="absolute bottom-2 left-2 z-[1000] px-2.5 py-0.5 rounded-xl bg-black/80 text-[10px] font-mono font-bold text-red-400 border border-red-500/30 backdrop-blur-md">
-            Oben Rorr Telematics Trace
+            Oben Rorr Telematics {activePath.length > 0 ? `• ${activePath.length} GPS Points` : ""}
           </div>
         </div>
 

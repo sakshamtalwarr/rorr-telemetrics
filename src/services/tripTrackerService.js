@@ -425,27 +425,50 @@ class TripTrackerService {
     try {
       console.log("🌐 Fetching raw GPS breadcrumbs from Oben Cloud for trip:", tripId);
       const response = await vehicleApi.getTripPath(tripId);
-      const rawData = response?.data?.data || response?.data || response;
+
+      let rawData = response?.data;
+      if (rawData?.data) rawData = rawData.data;
+      if (rawData?.vehiclePath) rawData = rawData.vehiclePath;
+      if (rawData?.path) rawData = rawData.path;
+      if (rawData?.points) rawData = rawData.points;
+      if (rawData?.locations) rawData = rawData.locations;
+      if (rawData?.coordinates) rawData = rawData.coordinates;
+      if (!Array.isArray(rawData) && Array.isArray(response)) rawData = response;
 
       // Handle diverse response shapes from Oben Argus API:
-      // 1. Array of tuples: [[lat, lng, timestamp, speed], ...]
+      // 1. Array of tuples: [[lat, lng, timestamp, speed], ...] or [[lng, lat, ...]]
       // 2. Array of objects: [{ lat, lng, speed, timestamp }, ...] or [{ latitude, longitude, ... }]
       if (Array.isArray(rawData)) {
         const points = rawData
           .map((item) => {
             if (Array.isArray(item)) {
+              let lat = Number(item[0]);
+              let lng = Number(item[1]);
+              // GeoJSON check for India: lat is ~8-38, lng is ~68-98
+              if (lat > 60 && lng < 40) {
+                const temp = lat;
+                lat = lng;
+                lng = temp;
+              }
               return {
-                lat: Number(item[0]),
-                lng: Number(item[1]),
+                lat,
+                lng,
                 timestamp: item[2],
                 speed: Number(item[3]) || 0,
               };
             } else if (item && typeof item === "object") {
+              let lat = Number(item.lat ?? item.latitude);
+              let lng = Number(item.lng ?? item.longitude ?? item.lon);
+              if (lat > 60 && lng < 40) {
+                const temp = lat;
+                lat = lng;
+                lng = temp;
+              }
               return {
-                lat: Number(item.lat ?? item.latitude),
-                lng: Number(item.lng ?? item.longitude),
+                lat,
+                lng,
                 speed: Number(item.speed) || 0,
-                timestamp: item.timestamp ?? item.createdAt,
+                timestamp: item.timestamp ?? item.createdAt ?? item.time,
               };
             }
             return null;

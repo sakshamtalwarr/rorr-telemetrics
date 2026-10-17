@@ -32,14 +32,14 @@ import GlassCard from "../common/GlassCard";
 import ErrorBoundary from "../common/ErrorBoundary";
 import { tripTracker } from "../../services/tripTrackerService";
 import { fetchRoadRoute } from "../../services/roadRouteService";
-import { getBangaloreAreaName, getTripRouteTitle } from "../../utils/locationUtils";
+import { getAreaName, getBangaloreAreaName, getTripRouteTitle } from "../../utils/locationUtils";
 
 // =====================================================
-// DEFAULT LOCATION (Bengaluru, Karnataka)
+// DEFAULT LOCATION (Delhi NCR, India)
 // =====================================================
 
-const DEFAULT_LAT = 12.9978;
-const DEFAULT_LNG = 77.5801;
+const DEFAULT_LAT = 28.6139;
+const DEFAULT_LNG = 77.2090;
 
 // =====================================================
 // CUSTOM LEAFLET DIV ICONS
@@ -258,7 +258,7 @@ export default function LiveMap({
     };
   }, [currentTripToDisplay]);
 
-  // Road-snapped trajectory coordinates for Rides mode (turns & street curves via OSRM)
+  // Road-snapped trajectory coordinates for Rides mode
   const [roadSnappedCoords, setRoadSnappedCoords] = useState(null);
 
   useEffect(() => {
@@ -268,53 +268,78 @@ export default function LiveMap({
     if (!currentTripToDisplay) return;
 
     async function computeRoute() {
-      // 1. If we have dense breadcrumbs (> 3 points), use them directly
+      // 1. If we have real vehicle GPS breadcrumbs (>= 2 points), use them directly!
       const candidatePoints =
-        Array.isArray(cloudPoints) && cloudPoints.length > 3
+        Array.isArray(cloudPoints) && cloudPoints.length >= 2
           ? cloudPoints
-          : (Array.isArray(currentTripToDisplay.points) && currentTripToDisplay.points.length > 3
+          : (Array.isArray(currentTripToDisplay.points) && currentTripToDisplay.points.length >= 2
               ? currentTripToDisplay.points
               : null);
 
       if (candidatePoints) {
         const coords = candidatePoints
-          .filter((p) => Number.isFinite(p?.lat ?? p?.latitude) && Number.isFinite(p?.lng ?? p?.longitude))
-          .map((p) => [Number(p.lat ?? p.latitude), Number(p.lng ?? p.longitude)]);
+          .map((p) => {
+            let lat = Number(p?.lat ?? p?.latitude);
+            let lng = Number(p?.lng ?? p?.longitude ?? p?.lon);
+            if (lat > 60 && lng < 40) {
+              const tmp = lat;
+              lat = lng;
+              lng = tmp;
+            }
+            return [lat, lng];
+          })
+          .filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng) && lat !== 0 && lng !== 0);
+
         if (coords.length > 1) {
           if (!isCancelled) setRoadSnappedCoords(coords);
           return;
         }
       }
 
-      // 2. Otherwise extract start and end coordinates and snap to actual road network via OSRM
-      const sLat = Number(
+      // If cloud points are still actively loading, wait for them to finish
+      if (isLoadingCloudPath) return;
+
+      // 2. Only if solely start and end coordinates exist
+      let sLat = Number(
         currentTripToDisplay.startLatitude ??
         currentTripToDisplay.startLocation?.coordinates?.[1] ??
-        currentTripToDisplay.points?.[0]?.lat ??
-        12.9978
+        currentTripToDisplay.points?.[0]?.lat
       );
-      const sLng = Number(
+      let sLng = Number(
         currentTripToDisplay.startLongitude ??
         currentTripToDisplay.startLocation?.coordinates?.[0] ??
-        currentTripToDisplay.points?.[0]?.lng ??
-        77.5812
+        currentTripToDisplay.points?.[0]?.lng
       );
-      const eLat = Number(
+      let eLat = Number(
         currentTripToDisplay.endLatitude ??
         currentTripToDisplay.endLocation?.coordinates?.[1] ??
-        currentTripToDisplay.points?.[currentTripToDisplay.points?.length - 1]?.lat ??
-        sLat
+        currentTripToDisplay.points?.[currentTripToDisplay.points?.length - 1]?.lat
       );
-      const eLng = Number(
+      let eLng = Number(
         currentTripToDisplay.endLongitude ??
         currentTripToDisplay.endLocation?.coordinates?.[0] ??
-        currentTripToDisplay.points?.[currentTripToDisplay.points?.length - 1]?.lng ??
-        sLng
+        currentTripToDisplay.points?.[currentTripToDisplay.points?.length - 1]?.lng
       );
 
-      const snapped = await fetchRoadRoute(sLat, sLng, eLat, eLng);
-      if (!isCancelled && snapped && snapped.length > 0) {
-        setRoadSnappedCoords(snapped);
+      if (sLat > 60 && sLng < 40) { const t = sLat; sLat = sLng; sLng = t; }
+      if (eLat > 60 && eLng < 40) { const t = eLat; eLat = eLng; eLng = t; }
+
+      if (
+        Number.isFinite(sLat) &&
+        Number.isFinite(sLng) &&
+        Number.isFinite(eLat) &&
+        Number.isFinite(eLng) &&
+        sLat !== 0 &&
+        sLng !== 0 &&
+        eLat !== 0 &&
+        eLng !== 0
+      ) {
+        const snapped = await fetchRoadRoute(sLat, sLng, eLat, eLng);
+        if (!isCancelled && snapped && snapped.length > 0) {
+          setRoadSnappedCoords(snapped);
+        } else if (!isCancelled) {
+          setRoadSnappedCoords([[sLat, sLng], [eLat, eLng]]);
+        }
       }
     }
 
@@ -323,7 +348,7 @@ export default function LiveMap({
     return () => {
       isCancelled = true;
     };
-  }, [currentTripToDisplay, cloudPoints]);
+  }, [currentTripToDisplay, cloudPoints, isLoadingCloudPath]);
 
   // Valid Position Check
   const validPosition =
@@ -581,21 +606,37 @@ export default function LiveMap({
 
     if (viewMode !== "routes" || !currentTripToDisplay) return;
 
-    // Prefer road-snapped street trajectory, falling back to points if snapping is in-flight
-    let coords = roadSnappedCoords;
-    if (!Array.isArray(coords) || coords.length < 2) {
-      const rawPoints =
-        (Array.isArray(cloudPoints) && cloudPoints.length >= 2)
-          ? cloudPoints
-          : (currentTripToDisplay.points || []);
-      coords = rawPoints
-        .filter((p) => Number.isFinite(p?.lat ?? p?.latitude) && Number.isFinite(p?.lng ?? p?.longitude))
-        .map((p) => [Number(p.lat ?? p.latitude), Number(p.lng ?? p.longitude)]);
+    // Prioritize real GPS breadcrumbs over synthetic road routes
+    let coords = null;
+    const densePoints =
+      (Array.isArray(cloudPoints) && cloudPoints.length >= 2)
+        ? cloudPoints
+        : (Array.isArray(currentTripToDisplay.points) && currentTripToDisplay.points.length >= 2
+            ? currentTripToDisplay.points
+            : null);
+
+    if (densePoints) {
+      coords = densePoints
+        .map((p) => {
+          let lat = Number(p?.lat ?? p?.latitude);
+          let lng = Number(p?.lng ?? p?.longitude ?? p?.lon);
+          if (lat > 60 && lng < 40) {
+            const tmp = lat;
+            lat = lng;
+            lng = tmp;
+          }
+          return [lat, lng];
+        })
+        .filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng) && lat !== 0 && lng !== 0);
+    }
+
+    if (!coords || coords.length < 2) {
+      coords = roadSnappedCoords;
     }
 
     if (!Array.isArray(coords) || coords.length < 2) return;
 
-    // 1. Draw Glowing Volcanic Red Route Polyline (snapped to real street curves)
+    // 1. Draw Glowing Volcanic Red Route Polyline (following real vehicle breadcrumbs)
     const polyline = L.polyline(coords, {
       color: "#EF4444",
       weight: 5,
@@ -607,6 +648,17 @@ export default function LiveMap({
 
     // 2. Add Start Marker (Point A)
     const startPoint = coords[0];
+    const startLocName =
+      (startPoint && getAreaName(startPoint[0], startPoint[1])) ||
+      currentTripToDisplay.startLocationName ||
+      "Origin";
+
+    const rawStartTime = currentTripToDisplay.tripStartTime || currentTripToDisplay.startTime;
+    const startTimeText = rawStartTime
+      ? new Date(rawStartTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      : "--";
+    const startSocVal = currentTripToDisplay.startSOC ?? currentTripToDisplay.startSoc ?? "--";
+
     const startMarker = L.marker(startPoint, {
       icon: startPointIcon,
       zIndexOffset: 900,
@@ -616,9 +668,9 @@ export default function LiveMap({
       <div style="font-family:sans-serif; color:#fff; background:#0B0C11; padding:8px 12px; border-radius:10px; border:1px solid #10b981;">
         <span style="color:#10b981; font-weight:bold; font-size:12px;">🟢 START POINT</span>
         <div style="font-size:11px; color:#cbd5e1; margin-top:4px;">
-          ${currentTripToDisplay.startLocationName || "Origin"}<br/>
-          Time: <b>${currentTripToDisplay.startTime ? new Date(currentTripToDisplay.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "--"}</b><br/>
-          Start SOC: <b>${currentTripToDisplay.startSoc ?? "--"}%</b>
+          <b>${startLocName}</b><br/>
+          Time: <b>${startTimeText}</b><br/>
+          Start SOC: <b>${startSocVal}%</b>
         </div>
       </div>
     `);
@@ -626,6 +678,14 @@ export default function LiveMap({
 
     // 3. Add Destination Marker (Point B / Finish)
     const endPoint = coords[coords.length - 1];
+    const endLocName =
+      (endPoint && getAreaName(endPoint[0], endPoint[1])) ||
+      currentTripToDisplay.endLocationName ||
+      "Destination";
+    const distVal = currentTripToDisplay.tripDistance ?? currentTripToDisplay.distanceKm ?? 0;
+    const durVal = currentTripToDisplay.sessionDurationMinutes ?? currentTripToDisplay.durationMinutes ?? 0;
+    const speedVal = currentTripToDisplay.maxSpeed ?? currentTripToDisplay.topSpeed ?? 0;
+
     const endMarker = L.marker(endPoint, {
       icon: endPointIcon,
       zIndexOffset: 950,
@@ -635,10 +695,10 @@ export default function LiveMap({
       <div style="font-family:sans-serif; color:#fff; background:#0B0C11; padding:8px 12px; border-radius:10px; border:1px solid #ef4444;">
         <span style="color:#ef4444; font-weight:bold; font-size:12px;">🏁 DESTINATION</span>
         <div style="font-size:11px; color:#cbd5e1; margin-top:4px;">
-          ${currentTripToDisplay.endLocationName || "Destination"}<br/>
-          Distance: <b>${currentTripToDisplay.distanceKm || currentTripToDisplay.tripDistance || 0} km</b><br/>
-          Duration: <b>${currentTripToDisplay.durationMinutes || currentTripToDisplay.sessionDurationMinutes || 0} min</b><br/>
-          Top Speed: <b>${currentTripToDisplay.topSpeed || currentTripToDisplay.maxSpeed || 0} km/h</b>
+          <b>${endLocName}</b><br/>
+          Distance: <b>${distVal} km</b><br/>
+          Duration: <b>${durVal} min</b><br/>
+          Top Speed: <b>${speedVal} km/h</b>
         </div>
       </div>
     `);

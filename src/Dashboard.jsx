@@ -189,11 +189,14 @@ export default function Dashboard({ profile, onLogout }) {
     return [];
   }, []);
 
-  const [tripFilter, setTripFilter] = useState({
-    preset: "all",
-    from: "2026-09-01",
-    to: "2026-10-31",
-    label: "All Recorded Rides",
+  const [tripFilter, setTripFilter] = useState(() => {
+    const todayStr = new Date().toISOString().split("T")[0];
+    return {
+      preset: "all",
+      from: "2024-01-01",
+      to: todayStr,
+      label: "All Recorded Rides",
+    };
   });
 
   // Merge recorded local trips with cloud trips from Oben Argus API with accurate IST sorting & filtering
@@ -202,8 +205,16 @@ export default function Dashboard({ profile, onLogout }) {
     if (Array.isArray(trips)) {
       trips.forEach((ct) => {
         const id = ct.tripId || ct.id || ct._id;
-        if (!combined.some((rt) => (rt.tripId || rt.id || rt._id) === id)) {
-          combined.push(ct);
+        // Exclude any legacy mock or test seeds
+        if (
+          id &&
+          !String(id).startsWith("delhi_trip_") &&
+          !String(id).startsWith("oben_trip_") &&
+          !String(id).startsWith("mock_")
+        ) {
+          if (!combined.some((rt) => (rt.tripId || rt.id || rt._id) === id)) {
+            combined.push(ct);
+          }
         }
       });
     }
@@ -291,10 +302,11 @@ export default function Dashboard({ profile, onLogout }) {
     let cancelled = false;
 
     // 1. Fetch Trips independently & immediately
+    const todayStr = new Date().toISOString().split("T")[0];
     vehicleApi
       .getTrips({
-        from: "2026-08-01",
-        to: "2026-10-31",
+        from: "2024-01-01",
+        to: todayStr,
         pageSize: 100,
       })
       .then((res) => {

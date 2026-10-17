@@ -27,38 +27,48 @@ import {
 } from "../../utils/dateUtils";
 import { getTripRouteTitle } from "../../utils/locationUtils";
 
-const FILTER_PRESETS = [
-  {
-    id: "all",
-    label: "🏍️ All Recorded Rides",
-    from: "2026-09-01",
-    to: "2026-10-31",
-  },
-  {
-    id: "sep30_oct01",
-    label: "🔥 Sep 30 & Oct 01 Rides",
-    from: "2026-09-30",
-    to: "2026-10-01",
-  },
-  {
-    id: "october",
-    label: "🗓️ October 2026",
-    from: "2026-10-01",
-    to: "2026-10-31",
-  },
-  {
-    id: "september",
-    label: "🗓️ September 2026",
-    from: "2026-09-01",
-    to: "2026-09-30",
-  },
-  {
-    id: "today",
-    label: "⚡ Today (17 Oct)",
-    from: new Date().toISOString().split("T")[0],
-    to: new Date().toISOString().split("T")[0],
-  },
-];
+export function getFilterPresets() {
+  const now = new Date();
+  const todayStr = now.toISOString().split("T")[0];
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000).toISOString().split("T")[0];
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000).toISOString().split("T")[0];
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const monthStart = `${year}-${month}-01`;
+
+  return [
+    {
+      id: "all",
+      label: "🏍️ All Recorded Rides",
+      from: "2024-01-01",
+      to: todayStr,
+    },
+    {
+      id: "today",
+      label: "⚡ Today",
+      from: todayStr,
+      to: todayStr,
+    },
+    {
+      id: "week",
+      label: "🗓️ Last 7 Days",
+      from: sevenDaysAgo,
+      to: todayStr,
+    },
+    {
+      id: "month",
+      label: "🗓️ This Month",
+      from: monthStart,
+      to: todayStr,
+    },
+    {
+      id: "last30",
+      label: "🔥 Last 30 Days",
+      from: thirtyDaysAgo,
+      to: todayStr,
+    },
+  ];
+}
 
 export default function TripLogs({
   trips = [],
@@ -69,8 +79,10 @@ export default function TripLogs({
 }) {
   const [selectedSessionForModal, setSelectedSessionForModal] = useState(null);
   const [showCustomDates, setShowCustomDates] = useState(false);
-  const [customFrom, setCustomFrom] = useState(tripFilter?.from || "2026-09-25");
-  const [customTo, setCustomTo] = useState(tripFilter?.to || "2026-10-18");
+  const presets = useMemo(() => getFilterPresets(), []);
+
+  const [customFrom, setCustomFrom] = useState(tripFilter?.from || presets[2].from);
+  const [customTo, setCustomTo] = useState(tripFilter?.to || presets[0].to);
 
   const handlePresetClick = (preset) => {
     if (onFilterChange) {
@@ -183,7 +195,7 @@ export default function TripLogs({
               </h3>
             </div>
             <p className="text-xs text-slate-400 mt-1">
-              Tap any ride to view the official Oben Electric trip breakdown & Bangalore route trace
+              Tap any ride to view the official Oben Electric trip breakdown & GPS route trace
             </p>
           </div>
 
@@ -207,7 +219,7 @@ export default function TripLogs({
         {/* FILTER PRESETS BAR */}
         {onFilterChange && (
           <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-4 custom-scrollbar">
-            {FILTER_PRESETS.map((p) => {
+            {presets.map((p) => {
               const isActive =
                 tripFilter?.preset === p.id ||
                 (tripFilter?.from === p.from && tripFilter?.to === p.to);
@@ -283,7 +295,7 @@ export default function TripLogs({
                     <div className="flex items-center gap-2 text-[10px] font-mono text-slate-300">
                       <span className="text-red-400 font-bold">{group.trips.length} Trips</span>
                       <span>•</span>
-                      <span className="text-white font-bold">{group.totalDistance} km</span>
+                      <span className="text-white font-bold">{Number(group.totalDistance).toFixed(1)} km</span>
                       <span>•</span>
                       <span className="text-emerald-400 font-bold">₹{group.totalSavings.toFixed(1)} saved</span>
                     </div>
@@ -367,7 +379,7 @@ export default function TripLogs({
 
                             <div className="text-right shrink-0">
                               <p className="text-base sm:text-lg font-black text-red-400 font-mono">
-                                {distance} km
+                                {distance > 0 ? distance.toFixed(1) : "0.0"} km
                               </p>
                               <p className="text-[10px] text-emerald-400 font-mono font-bold">
                                 ₹{netSavings} saved
@@ -427,19 +439,12 @@ export default function TripLogs({
                 No trips found for selected filter range
               </p>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Try switching to "All Recorded Rides" or "Sep 30 & Oct 01 Rides" to see your telemetry data.
+                Try switching to "All Recorded Rides" or adjusting the date range to see your telemetry data.
               </p>
               {onFilterChange && (
                 <button
                   type="button"
-                  onClick={() =>
-                    handlePresetClick({
-                      id: "all",
-                      from: "2026-09-01",
-                      to: "2026-10-31",
-                      label: "🏍️ All Recorded Rides",
-                    })
-                  }
+                  onClick={() => handlePresetClick(presets[0])}
                   className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs transition-all shadow-md shadow-red-600/30"
                 >
                   Show All Recorded Rides

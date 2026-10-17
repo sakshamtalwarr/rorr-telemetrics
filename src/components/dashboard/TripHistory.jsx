@@ -37,9 +37,10 @@ import {
 } from "../../utils/dateUtils";
 import { fetchRoadRoute } from "../../services/roadRouteService";
 import { getTripRouteTitle } from "../../utils/locationUtils";
+import { tripTracker } from "../../services/tripTrackerService";
 
-const DEFAULT_LAT = 12.9977986667;
-const DEFAULT_LNG = 77.5800862667;
+const DEFAULT_LAT = 28.6139;
+const DEFAULT_LNG = 77.2090;
 
 export default function TripHistory({
   liveData,
@@ -56,6 +57,44 @@ export default function TripHistory({
 
   const [activeGraphMode, setActiveGraphMode] = useState("trips"); // "trips" | "live"
   const [selectedPreviewTrip, setSelectedPreviewTrip] = useState(() => (trips.length > 0 ? trips[0] : null));
+
+  // Asynchronously fetch cloud GPS breadcrumbs for the selected preview trip
+  const [cloudPoints, setCloudPoints] = useState(null);
+  const [loadingCloudPath, setLoadingCloudPath] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setCloudPoints(null);
+
+    if (!selectedPreviewTrip) return;
+
+    if (Array.isArray(selectedPreviewTrip.points) && selectedPreviewTrip.points.length >= 2) {
+      setCloudPoints(selectedPreviewTrip.points);
+      return;
+    }
+
+    const tripId = selectedPreviewTrip.tripId || selectedPreviewTrip.id || selectedPreviewTrip._id;
+    if (tripId) {
+      setLoadingCloudPath(true);
+      tripTracker
+        .fetchAndNormalizeCloudTripPath(tripId)
+        .then((pts) => {
+          if (!cancelled) {
+            setLoadingCloudPath(false);
+            if (pts && pts.length >= 2) {
+              setCloudPoints(pts);
+            }
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setLoadingCloudPath(false);
+        });
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPreviewTrip]);
 
   useEffect(() => {
     if (!selectedPreviewTrip && trips.length > 0) {
@@ -89,21 +128,36 @@ export default function TripHistory({
       ? session.maxSoc
       : liveData?.soc || 0;
 
-  // Extract Route Coordinates (from selected preview trip or live rolling route history)
+  // Extract Route Coordinates (prioritizing real vehicle GPS breadcrumbs)
   const routeCoordinates = useMemo(() => {
-    if (selectedPreviewTrip && Array.isArray(selectedPreviewTrip.points) && selectedPreviewTrip.points.length > 1) {
-      return selectedPreviewTrip.points
-        .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng))
-        .map((p) => [p.lat, p.lng]);
+    const rawList = cloudPoints || selectedPreviewTrip?.points;
+    if (Array.isArray(rawList) && rawList.length >= 2) {
+      const valid = rawList
+        .map((p) => {
+          let lat = Number(p.lat ?? p.latitude);
+          let lng = Number(p.lng ?? p.longitude ?? p.lon);
+          if (lat > 60 && lng < 40) {
+            const temp = lat;
+            lat = lng;
+            lng = temp;
+          }
+          return [lat, lng];
+        })
+        .filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng) && lat !== 0 && lng !== 0);
+
+      if (valid.length >= 2) return valid;
     }
 
-    const sLat = Number(selectedPreviewTrip?.startLatitude ?? selectedPreviewTrip?.startLocation?.coordinates?.[1]);
-    const sLng = Number(selectedPreviewTrip?.startLongitude ?? selectedPreviewTrip?.startLocation?.coordinates?.[0]);
-    const eLat = Number(selectedPreviewTrip?.endLatitude ?? selectedPreviewTrip?.endLocation?.coordinates?.[1]);
-    const eLng = Number(selectedPreviewTrip?.endLongitude ?? selectedPreviewTrip?.endLocation?.coordinates?.[0]);
+    let sLat = Number(selectedPreviewTrip?.startLatitude ?? selectedPreviewTrip?.startLocation?.coordinates?.[1]);
+    let sLng = Number(selectedPreviewTrip?.startLongitude ?? selectedPreviewTrip?.startLocation?.coordinates?.[0]);
+    let eLat = Number(selectedPreviewTrip?.endLatitude ?? selectedPreviewTrip?.endLocation?.coordinates?.[1]);
+    let eLng = Number(selectedPreviewTrip?.endLongitude ?? selectedPreviewTrip?.endLocation?.coordinates?.[0]);
 
-    if (Number.isFinite(sLat) && Number.isFinite(sLng)) {
-      if (Number.isFinite(eLat) && Number.isFinite(eLng)) {
+    if (sLat > 60 && sLng < 40) { const t = sLat; sLat = sLng; sLng = t; }
+    if (eLat > 60 && eLng < 40) { const t = eLat; eLat = eLng; eLng = t; }
+
+    if (Number.isFinite(sLat) && Number.isFinite(sLng) && sLat !== 0 && sLng !== 0) {
+      if (Number.isFinite(eLat) && Number.isFinite(eLng) && eLat !== 0 && eLng !== 0) {
         return [[sLat, sLng], [eLat, eLng]];
       }
       return [[sLat, sLng]];
@@ -112,48 +166,62 @@ export default function TripHistory({
     return routeHistory
       .filter(
         (point) =>
-          Number.isFinite(point.latitude) && Number.isFinite(point.longitude)
+          Number.isFinite(point.latitude) && Number.isFinite(point.longitude) && point.latitude !== 0 && point.longitude !== 0
       )
-      .map((point) => [point.latitude, point.longitude]);
-  }, [selectedPreviewTrip, routeHistory]);
+      .map((point) => {
+        let lat = Number(point.latitude);
+        let lng = Number(point.longitude);
+        if (lat > 60 && lng < 40) { const t = lat; lat = lng; lng = t; }
+        return [lat, lng];
+      });
+  }, [selectedPreviewTrip, cloudPoints, routeHistory]);
 
-  // State for realistic road-following geometry (OSRM)
+  // Road snapping only when sparse endpoints exist without full breadcrumbs
   const [roadRoute, setRoadRoute] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function loadRoadRoute() {
-      if (selectedPreviewTrip && Array.isArray(selectedPreviewTrip.points) && selectedPreviewTrip.points.length > 3) {
-        const pts = selectedPreviewTrip.points
-          .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng))
-          .map((p) => [p.lat, p.lng]);
-        if (pts.length > 1) {
-          setRoadRoute(pts);
-          return;
-        }
-      }
+    // 1. If we have real dense breadcrumbs, use them directly!
+    if (routeCoordinates.length > 2) {
+      setRoadRoute(routeCoordinates);
+      return;
+    }
 
-      const sLat = Number(selectedPreviewTrip?.startLatitude ?? selectedPreviewTrip?.startLocation?.coordinates?.[1] ?? DEFAULT_LAT);
-      const sLng = Number(selectedPreviewTrip?.startLongitude ?? selectedPreviewTrip?.startLocation?.coordinates?.[0] ?? DEFAULT_LNG);
-      const eLat = Number(selectedPreviewTrip?.endLatitude ?? selectedPreviewTrip?.endLocation?.coordinates?.[1] ?? sLat);
-      const eLng = Number(selectedPreviewTrip?.endLongitude ?? selectedPreviewTrip?.endLocation?.coordinates?.[0] ?? sLng);
+    // 2. If only start & end points exist
+    if (routeCoordinates.length === 2) {
+      const [sLat, sLng] = routeCoordinates[0];
+      const [eLat, eLng] = routeCoordinates[1];
 
-      const snapped = await fetchRoadRoute(sLat, sLng, eLat, eLng);
-      if (!cancelled && snapped && snapped.length > 0) {
-        setRoadRoute(snapped);
+      if (
+        Number.isFinite(sLat) &&
+        Number.isFinite(sLng) &&
+        Number.isFinite(eLat) &&
+        Number.isFinite(eLng) &&
+        sLat !== 0 &&
+        sLng !== 0 &&
+        eLat !== 0 &&
+        eLng !== 0
+      ) {
+        fetchRoadRoute(sLat, sLng, eLat, eLng).then((snapped) => {
+          if (!cancelled && snapped && snapped.length > 0) {
+            setRoadRoute(snapped);
+          }
+        });
+        return;
       }
     }
 
-    loadRoadRoute();
+    setRoadRoute([]);
+
     return () => {
       cancelled = true;
     };
-  }, [selectedPreviewTrip]);
+  }, [routeCoordinates]);
 
   const activePath = roadRoute.length > 0 ? roadRoute : routeCoordinates;
 
-  // Leaflet Map Initialization with Unwatermarked Esri Dark Canvas
+  // Leaflet Map Initialization
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
@@ -162,14 +230,15 @@ export default function TripHistory({
         delete mapContainerRef.current._leaflet_id;
       }
 
-      const center =
-        activePath.length > 0
-          ? activePath[0]
-          : [DEFAULT_LAT, DEFAULT_LNG];
+      const defaultCenter = [
+        Number(liveData?.latitude) || DEFAULT_LAT,
+        Number(liveData?.longitude) || DEFAULT_LNG,
+      ];
+      const center = activePath.length > 0 ? activePath[0] : defaultCenter;
 
       const map = L.map(mapContainerRef.current, {
         center,
-        zoom: activePath.length > 0 ? 14 : 13,
+        zoom: activePath.length > 0 ? 14 : 12,
         zoomControl: true,
         attributionControl: false,
         maxZoom: 18,
@@ -627,7 +696,7 @@ export default function TripHistory({
 
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono text-slate-400">
-              {routeCoordinates.length} GPS Points Recorded
+              {loadingCloudPath ? "Fetching GPS points..." : `${activePath.length} GPS Points Recorded`}
             </span>
             {onSelectTrip && selectedPreviewTrip && (
               <button
