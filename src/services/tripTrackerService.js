@@ -6,6 +6,8 @@
 // completed trips with point-to-point route polylines.
 // =====================================================
 
+import { vehicleApi } from "./vehicleApi";
+
 const DB_NAME = "rorr_trips_db";
 const DB_VERSION = 1;
 const STORE_NAME = "trips";
@@ -479,6 +481,60 @@ class TripTrackerService {
     return trips.sort(
       (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
     );
+  }
+
+  // =====================================================
+  // FETCH TRIP GPS BREADCRUMBS DIRECTLY FROM OBEN CLOUD
+  // =====================================================
+  async fetchAndNormalizeCloudTripPath(tripId) {
+    if (!tripId) return null;
+
+    try {
+      console.log("🌐 Fetching raw GPS breadcrumbs from Oben Cloud for trip:", tripId);
+      const response = await vehicleApi.getTripPath(tripId);
+      const rawData = response?.data?.data || response?.data || response;
+
+      // Handle diverse response shapes from Oben Argus API:
+      // 1. Array of tuples: [[lat, lng, timestamp, speed], ...]
+      // 2. Array of objects: [{ lat, lng, speed, timestamp }, ...] or [{ latitude, longitude, ... }]
+      if (Array.isArray(rawData)) {
+        const points = rawData
+          .map((item) => {
+            if (Array.isArray(item)) {
+              return {
+                lat: Number(item[0]),
+                lng: Number(item[1]),
+                timestamp: item[2],
+                speed: Number(item[3]) || 0,
+              };
+            } else if (item && typeof item === "object") {
+              return {
+                lat: Number(item.lat ?? item.latitude),
+                lng: Number(item.lng ?? item.longitude),
+                speed: Number(item.speed) || 0,
+                timestamp: item.timestamp ?? item.createdAt,
+              };
+            }
+            return null;
+          })
+          .filter(
+            (p) =>
+              p &&
+              Number.isFinite(p.lat) &&
+              Number.isFinite(p.lng) &&
+              p.lat !== 0 &&
+              p.lng !== 0
+          );
+
+        if (points.length > 0) {
+          console.log(`✅ Loaded ${points.length} GPS breadcrumb points directly from Oben server!`);
+          return points;
+        }
+      }
+    } catch (err) {
+      console.warn("Could not fetch cloud trip path from Oben server:", err);
+    }
+    return null;
   }
 }
 

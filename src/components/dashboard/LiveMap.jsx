@@ -30,6 +30,7 @@ import {
 
 import GlassCard from "../common/GlassCard";
 import ErrorBoundary from "../common/ErrorBoundary";
+import { tripTracker } from "../../services/tripTrackerService";
 
 // =====================================================
 // DEFAULT LOCATION (Uttam Nagar, West Delhi default)
@@ -208,6 +209,8 @@ export default function LiveMap({
   // Active view mode: "live" (live bike & geofence) vs "routes" (trip playback & route lines)
   const [viewMode, setViewMode] = useState(() => (selectedTrip ? "routes" : "live"));
   const [internalSelectedTrip, setInternalSelectedTrip] = useState(selectedTrip);
+  const [cloudPoints, setCloudPoints] = useState(null);
+  const [isLoadingCloudPath, setIsLoadingCloudPath] = useState(false);
 
   useEffect(() => {
     if (selectedTrip) {
@@ -217,6 +220,41 @@ export default function LiveMap({
   }, [selectedTrip]);
 
   const currentTripToDisplay = internalSelectedTrip || (trips.length > 0 ? trips[0] : null);
+
+  // Fetch real historical GPS breadcrumbs directly from Oben server if not present
+  useEffect(() => {
+    let isCancelled = false;
+    setCloudPoints(null);
+
+    if (!currentTripToDisplay) return;
+
+    if (Array.isArray(currentTripToDisplay.points) && currentTripToDisplay.points.length >= 2) {
+      setCloudPoints(currentTripToDisplay.points);
+      return;
+    }
+
+    const tripId = currentTripToDisplay.tripId || currentTripToDisplay.id;
+    if (tripId) {
+      setIsLoadingCloudPath(true);
+      tripTracker
+        .fetchAndNormalizeCloudTripPath(tripId)
+        .then((pts) => {
+          if (!isCancelled) {
+            setIsLoadingCloudPath(false);
+            if (pts && pts.length >= 2) {
+              setCloudPoints(pts);
+            }
+          }
+        })
+        .catch(() => {
+          if (!isCancelled) setIsLoadingCloudPath(false);
+        });
+    }
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [currentTripToDisplay]);
 
   // Valid Position Check
   const validPosition =
@@ -378,6 +416,11 @@ export default function LiveMap({
       </div>
     `);
 
+    // Append to live rolling trail polyline
+    if (trailRef.current && validPosition) {
+      trailRef.current.addLatLng(pos);
+    }
+
     // Only pan if in live view mode
     if (viewMode === "live") {
       mapRef.current.panTo(pos, { animate: true, duration: 0.5 });
@@ -462,7 +505,11 @@ export default function LiveMap({
 
     if (viewMode !== "routes" || !currentTripToDisplay) return;
 
-    const points = currentTripToDisplay.points || [];
+    const points =
+      (Array.isArray(cloudPoints) && cloudPoints.length >= 2)
+        ? cloudPoints
+        : (currentTripToDisplay.points || []);
+
     if (!Array.isArray(points) || points.length < 2) return;
 
     const coords = points
@@ -529,7 +576,7 @@ export default function LiveMap({
     } catch (e) {
       console.warn("Could not fitBounds to route:", e);
     }
-  }, [viewMode, currentTripToDisplay]);
+  }, [viewMode, currentTripToDisplay, cloudPoints]);
 
   // ===================================================
   // ACTIVE ONGOING TRIP REAL-TIME TRAIL
@@ -628,9 +675,17 @@ export default function LiveMap({
                 )}
               </div>
               <p className="text-[9px] sm:text-[10px] font-mono text-slate-400">
-                {viewMode === "routes" && currentTripToDisplay
-                  ? `${currentTripToDisplay.distanceKm || 0} km • ${currentTripToDisplay.durationMinutes || 0} min • Top: ${currentTripToDisplay.topSpeed || 0} km/h`
-                  : (validPosition ? `${latitude.toFixed(6)}° N, ${longitude.toFixed(6)}° E` : "Awaiting GPS Satellites...")}
+                {isLoadingCloudPath ? (
+                  <span className="text-amber-400 font-bold animate-pulse flex items-center gap-1">
+                    <span>🌐 Fetching GPS route path directly from Oben server...</span>
+                  </span>
+                ) : viewMode === "routes" && currentTripToDisplay ? (
+                  `${currentTripToDisplay.distanceKm || 0} km • ${currentTripToDisplay.durationMinutes || 0} min • Top: ${currentTripToDisplay.topSpeed || 0} km/h`
+                ) : validPosition ? (
+                  `${latitude.toFixed(6)}° N, ${longitude.toFixed(6)}° E`
+                ) : (
+                  "Awaiting GPS Satellites..."
+                )}
               </p>
             </div>
           </div>
