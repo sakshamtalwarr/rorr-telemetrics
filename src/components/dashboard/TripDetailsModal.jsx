@@ -224,12 +224,13 @@ export default function TripDetailsModal({
         attributionControl: false,
       }).setView(initialCenter, 13);
 
-      // Dark Matter tiles matching Red & Black Clay theme
+      // 100% Open-Source Dark OpenStreetMap (No API key needed)
       L.tileLayer(
-        "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png",
+        "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
         {
           maxZoom: 19,
-          subdomains: "abcd",
+          attribution: "© OpenStreetMap contributors",
+          className: "osm-dark-tiles",
         }
       ).addTo(map);
 

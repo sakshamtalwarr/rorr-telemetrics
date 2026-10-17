@@ -33,11 +33,11 @@ import ErrorBoundary from "../common/ErrorBoundary";
 import { tripTracker } from "../../services/tripTrackerService";
 
 // =====================================================
-// DEFAULT LOCATION (Uttam Nagar, West Delhi default)
+// DEFAULT LOCATION (Bengaluru, Karnataka)
 // =====================================================
 
-const DEFAULT_LAT = 28.6236;
-const DEFAULT_LNG = 77.0673;
+const DEFAULT_LAT = 12.9978;
+const DEFAULT_LNG = 77.5801;
 
 // =====================================================
 // CUSTOM LEAFLET DIV ICONS
