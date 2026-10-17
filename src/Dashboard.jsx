@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   Bike,
   User,
+  TrendingUp,
 } from "lucide-react";
 
 import Header from "./components/dashboard/Header";

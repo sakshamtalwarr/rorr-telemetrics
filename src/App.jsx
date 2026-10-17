@@ -5,6 +5,7 @@ import {
 
 import Login from "./components/auth/Login";
 import Dashboard from "./Dashboard";
+import ErrorBoundary from "./components/common/ErrorBoundary";
 
 import {
   getProfile,
@@ -917,9 +918,11 @@ export default function App() {
   // ===================================================
 
   return (
-    <Dashboard
-      profile={profile}
-      onLogout={handleLogout}
-    />
+    <ErrorBoundary>
+      <Dashboard
+        profile={profile}
+        onLogout={handleLogout}
+      />
+    </ErrorBoundary>
   );
 }
