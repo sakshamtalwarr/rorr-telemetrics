@@ -33,11 +33,12 @@ export default function Header({
     "Rider";
 
   const navLinks = [
-    { id: "overview", label: "Overview", icon: Gauge },
-    { id: "telemetry", label: "Telemetry", icon: Activity },
+    { id: "overview", label: "Cockpit", icon: Gauge },
+    { id: "rides", label: "Rides & Logs", icon: TrendingUp },
+    { id: "map", label: "Live Map", icon: MapPin },
+    { id: "alerts", label: "Safety & SOS", icon: Bell },
     { id: "bms", label: "ANT BMS", icon: Zap },
-    { id: "map", label: "Map & Fence", icon: MapPin },
-    { id: "rides", label: "Rides", icon: TrendingUp },
+    { id: "telemetry", label: "Diagnostics", icon: Activity },
     { id: "profile", label: "Profile", icon: User },
   ];
 

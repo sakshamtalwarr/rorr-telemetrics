@@ -18,6 +18,7 @@ import {
   Bike,
   User,
   TrendingUp,
+  Bell,
 } from "lucide-react";
 
 import Header from "./components/dashboard/Header";
@@ -33,6 +34,7 @@ import FaultPanel from "./components/dashboard/FaultPanel";
 import RidingTrends from "./components/dashboard/RidingTrends";
 import TripLogs from "./components/dashboard/TripLogs";
 import TripHistory from "./components/dashboard/TripHistory";
+import TripDetailsModal from "./components/dashboard/TripDetailsModal";
 import Alerts from "./components/dashboard/Alerts";
 import Profile from "./pages/Profile";
 import AntBmsMonitor from "./components/dashboard/AntBmsMonitor";
@@ -41,6 +43,12 @@ import RedDustBackground from "./components/common/RedDustBackground";
 import useVehicleTelemetry from "./hooks/useVehicleTelemetry";
 import { vehicleApi } from "./services/vehicleApi";
 import { tripTracker } from "./services/tripTrackerService";
+import {
+  parseObenDate,
+  formatISTTime,
+  formatISTDate,
+  formatDuration,
+} from "./utils/dateUtils";
 
 // =====================================================
 // INITIAL GEOFENCE
@@ -63,7 +71,7 @@ const INITIAL_GEOFENCE = {
 // ROUTE MAPPING
 // =====================================================
 
-const VALID_PAGES = ["overview", "telemetry", "bms", "map", "rides", "profile"];
+const VALID_PAGES = ["overview", "rides", "map", "alerts", "bms", "telemetry", "profile"];
 
 function getPageFromHash() {
   try {
@@ -75,6 +83,7 @@ function getPageFromHash() {
     if (rawHash === "bms" || rawHash === "battery" || rawHash === "cells" || rawHash === "ant") return "bms";
     if (rawHash === "geofence" || rawHash === "navigation") return "map";
     if (rawHash === "trips" || rawHash === "trends" || rawHash === "history") return "rides";
+    if (rawHash === "safety" || rawHash === "sos" || rawHash === "notifications" || rawHash === "alerts") return "alerts";
     if (rawHash === "account" || rawHash === "bike" || rawHash === "vehicle") return "profile";
 
     if (VALID_PAGES.includes(rawHash)) {
@@ -98,6 +107,7 @@ export default function Dashboard({ profile, onLogout }) {
   const [recordedTrips, setRecordedTrips] = useState(() => tripTracker.getInitialTrips());
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [activeTrip, setActiveTrip] = useState(null);
+  const [previewTripFromOverview, setPreviewTripFromOverview] = useState(null);
 
   // Default to dark Red & Black theme for Red Oben Rorr Electric
   const [theme, setTheme] = useState("dark");
@@ -174,32 +184,41 @@ export default function Dashboard({ profile, onLogout }) {
 
   const [tripFilter, setTripFilter] = useState({
     preset: "all",
-    from: "2024-09-01",
-    to: new Date().toISOString().split("T")[0],
+    from: "2026-09-01",
+    to: "2026-10-31",
     label: "All Recorded Rides",
   });
 
-  // Merge recorded local trips with cloud trips from Oben Argus API
+  // Merge recorded local trips with cloud trips from Oben Argus API with accurate IST sorting & filtering
   const allDisplayTrips = useMemo(() => {
     const combined = [...recordedTrips];
     if (Array.isArray(trips)) {
       trips.forEach((ct) => {
-        if (!combined.some((rt) => rt.tripId === ct.tripId || rt.tripId === ct.id)) {
+        const id = ct.tripId || ct.id || ct._id;
+        if (!combined.some((rt) => (rt.tripId || rt.id || rt._id) === id)) {
           combined.push(ct);
         }
       });
     }
 
-    // Filter by tripFilter if active
+    // Sort newest first
+    combined.sort((a, b) => {
+      const tA = parseObenDate(a.tripStartTime || a.startTime || a.timestamp || a.createdAt).getTime();
+      const tB = parseObenDate(b.tripStartTime || b.startTime || b.timestamp || b.createdAt).getTime();
+      return tB - tA;
+    });
+
+    // Filter by tripFilter with IST day boundaries
     if (tripFilter?.from && tripFilter?.to) {
-      const fromTime = new Date(tripFilter.from).getTime();
-      // Add 24h to include entire target day up to 23:59:59
-      const toTime = new Date(tripFilter.to).getTime() + 86400000;
+      const fromTime = new Date(`${tripFilter.from}T00:00:00+05:30`).getTime();
+      const toTime = new Date(`${tripFilter.to}T23:59:59.999+05:30`).getTime();
 
       return combined.filter((t) => {
-        const rawTime = t.startTime || t.timestamp || t.createdAt;
-        if (!rawTime) return false;
-        const tTime = new Date(rawTime).getTime();
+        const rawTime = t.tripStartTime || t.startTime || t.timestamp || t.createdAt;
+        if (!rawTime) return true;
+        const d = parseObenDate(rawTime);
+        const tTime = d.getTime();
+        if (Number.isNaN(tTime)) return true;
         return tTime >= fromTime && tTime <= toTime;
       });
     }
@@ -238,11 +257,20 @@ export default function Dashboard({ profile, onLogout }) {
       const response = await vehicleApi.getTrips({
         from: newFilter.from,
         to: newFilter.to,
-        pageSize: 50,
+        pageSize: 100,
       });
       const list = extractTripsList(response);
       if (list.length > 0) {
-        setTrips(list);
+        setTrips((prev) => {
+          const merged = [...prev];
+          list.forEach((item) => {
+            const id = item.tripId || item.id || item._id;
+            if (!merged.some((m) => (m.tripId || m.id || m._id) === id)) {
+              merged.push(item);
+            }
+          });
+          return merged;
+        });
       }
     } catch (err) {
       console.warn("Trip filter fetch error:", err);
@@ -256,9 +284,9 @@ export default function Dashboard({ profile, onLogout }) {
       try {
         const [tripsResponse, alertsResponse] = await Promise.all([
           vehicleApi.getTrips({
-            from: "2026-09-25",
-            to: "2026-10-18",
-            pageSize: 50,
+            from: "2026-09-01",
+            to: "2026-10-31",
+            pageSize: 100,
           }),
           vehicleApi.getAlerts(),
         ]);
@@ -466,6 +494,8 @@ export default function Dashboard({ profile, onLogout }) {
               ? "Live Tracking & Geofence"
               : activePage === "rides"
               ? "Riding Trends & Analytics"
+              : activePage === "alerts"
+              ? "Oben Active Safety & SOS"
               : activePage === "profile"
               ? "Rider & Bike Profile"
               : activePage === "telemetry"
@@ -729,85 +759,89 @@ export default function Dashboard({ profile, onLogout }) {
                   </div>
                 </GlassCard>
 
-                {/* Bike & Rider Card */}
-                <GlassCard variant="default" className="p-5 sm:p-6 flex-1">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 rounded-2xl bg-red-600 text-white shadow-sm">
-                        <Bike className="w-4 h-4" />
+                {/* Latest Ride Highlight Card */}
+                {allDisplayTrips.length > 0 && (
+                  <GlassCard variant="default" className="p-4 sm:p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-xl bg-red-600 text-white shadow-sm">
+                          <TrendingUp className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-white text-xs sm:text-sm">
+                            Latest Ride Highlight
+                          </h4>
+                          <p className="text-[10px] text-slate-400 font-mono">
+                            {formatISTDate(allDisplayTrips[0]?.tripStartTime || allDisplayTrips[0]?.startTime || allDisplayTrips[0]?.timestamp)}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewTripFromOverview(allDisplayTrips[0])}
+                        className="px-2.5 py-1 rounded-xl bg-red-600/30 hover:bg-red-600 text-red-300 hover:text-white text-[10px] font-bold border border-red-500/40 transition-colors"
+                      >
+                        Trip Breakdown →
+                      </button>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-black/50 border border-white/5 flex items-center justify-between">
+                      <div>
+                        <p className="text-base font-black text-red-400 font-mono">
+                          {allDisplayTrips[0]?.tripDistance ?? allDisplayTrips[0]?.distanceKm ?? 0} km
+                        </p>
+                        <p className="text-[10px] text-slate-400 font-mono">
+                          {formatDuration(allDisplayTrips[0]?.sessionDurationMinutes ?? allDisplayTrips[0]?.durationMinutes ?? 0)} • {formatISTTime(allDisplayTrips[0]?.tripStartTime || allDisplayTrips[0]?.startTime)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-bold text-emerald-400 font-mono">
+                          ₹{allDisplayTrips[0]?.netSavings ?? (Number(allDisplayTrips[0]?.tripDistance || 0) * 2.28).toFixed(1)} saved
+                        </p>
+                        <p className="text-[10px] text-amber-400 font-mono">
+                          Top: {allDisplayTrips[0]?.maxSpeed ?? allDisplayTrips[0]?.topSpeed ?? 0} km/h
+                        </p>
+                      </div>
+                    </div>
+                  </GlassCard>
+                )}
+
+                {/* Active Safety Guard Quick Status Card */}
+                <GlassCard variant="default" className="p-4 sm:p-5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-red-600/20 text-red-400 border border-red-500/30">
+                        <Bell className="w-4 h-4 text-red-400" />
                       </div>
                       <div>
-                        <h4 className="font-bold text-white text-sm">
-                          Oben Rorr Red Edition
+                        <h4 className="font-bold text-white text-xs sm:text-sm">
+                          Oben Safety Shield Active
                         </h4>
-                        <p className="text-[11px] text-slate-400">Owner: {profile?.firstName || "Rider"}</p>
+                        <p className="text-[10px] text-slate-400">
+                          Fall / Crash SOS Armed • Anti-Theft Guard ON
+                        </p>
                       </div>
                     </div>
                     <button
                       type="button"
-                      onClick={() => navigateTo("profile")}
-                      className="text-xs font-bold text-red-400 hover:underline"
+                      onClick={() => navigateTo("alerts")}
+                      className="px-2.5 py-1 rounded-xl bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white font-bold text-[10px] border border-red-500/40 transition-colors"
                     >
-                      View Profile →
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 rounded-2xl bg-black/30 border border-white/5">
-                    <div>
-                      <p className="text-[10px] text-slate-500 font-medium uppercase">Battery Architecture</p>
-                      <p className="text-xs font-bold text-slate-200">4.4 kWh LFP Pack • ANT BMS Ready</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => navigateTo("bms")}
-                      className="px-2.5 py-1 rounded-xl bg-red-600/30 hover:bg-red-600 text-red-300 hover:text-white font-bold text-[10px] border border-red-500/40 transition-colors"
-                    >
-                      BMS Live →
+                      Safety Hub →
                     </button>
                   </div>
                 </GlassCard>
               </div>
             </div>
+          </div>
+        )}
 
-            {/* Overview Recent Trip Logs & Map Route Launcher */}
-            <div className="mt-6">
-              <div className="flex items-center justify-between mb-3 px-1">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-xl bg-red-600/20 text-red-400 border border-red-500/30">
-                    <TrendingUp className="w-4 h-4 text-red-400" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold uppercase tracking-wider text-white">
-                      Trip Logs & Route Tracker
-                    </h4>
-                    <p className="text-xs text-slate-400">
-                      Rides logged directly from your Oben Rorr telematics
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => navigateTo("rides")}
-                  className="px-3 py-1.5 rounded-xl bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/30 text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95"
-                >
-                  <span>Full Analytics</span>
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <TripLogs
-                trips={allDisplayTrips}
-                onSelectTrip={handleSelectTrip}
-                tripFilter={tripFilter}
-                onFilterChange={changeTripFilter}
-                liveData={liveData}
-              />
-            </div>
-
-            {/* System Alerts & Active Safety Hub */}
-            <div className="mt-6">
-              <Alerts alerts={alerts} onNavigate={navigateTo} />
-            </div>
+        {/* =========================================================
+            PAGE: SAFETY & ALERTS (Oben Active Safety Engine)
+        ========================================================= */}
+        {activePage === "alerts" && (
+          <div className="space-y-6 fade-in-scale">
+            <Alerts alerts={alerts} onNavigate={navigateTo} />
           </div>
         )}
 
@@ -953,6 +987,16 @@ export default function Dashboard({ profile, onLogout }) {
 
       {/* Floating Bottom Dock (Mobile & Handheld Navigation) */}
       <Dock activePage={activePage} onNavigate={navigateTo} />
+
+      {/* Latest Ride Modal Preview from Overview */}
+      {previewTripFromOverview && (
+        <TripDetailsModal
+          trip={previewTripFromOverview}
+          onClose={() => setPreviewTripFromOverview(null)}
+          liveData={liveData}
+          onOpenFullMap={handleSelectTrip}
+        />
+      )}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import {
   MapPin,
   TrendingUp,
   User,
+  Bell,
 } from "lucide-react";
 
 /**
@@ -22,14 +23,9 @@ export default function Dock({
       icon: Gauge,
     },
     {
-      id: "telemetry",
-      label: "Telemetry",
-      icon: Activity,
-    },
-    {
-      id: "bms",
-      label: "BMS",
-      icon: Zap,
+      id: "rides",
+      label: "Rides",
+      icon: TrendingUp,
     },
     {
       id: "map",
@@ -37,9 +33,14 @@ export default function Dock({
       icon: MapPin,
     },
     {
-      id: "rides",
-      label: "Rides",
-      icon: TrendingUp,
+      id: "alerts",
+      label: "Alerts",
+      icon: Bell,
+    },
+    {
+      id: "bms",
+      label: "BMS",
+      icon: Zap,
     },
     {
       id: "profile",

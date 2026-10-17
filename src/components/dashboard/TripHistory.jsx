@@ -30,6 +30,11 @@ import GlassCard from "../common/GlassCard";
 import ErrorBoundary from "../common/ErrorBoundary";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import {
+  parseObenDate,
+  formatISTTime,
+  formatISTDate,
+} from "../../utils/dateUtils";
 
 const DEFAULT_LAT = 12.9977986667;
 const DEFAULT_LNG = 77.5800862667;
@@ -89,6 +94,19 @@ export default function TripHistory({
         .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng))
         .map((p) => [p.lat, p.lng]);
     }
+
+    const sLat = Number(selectedPreviewTrip?.startLatitude ?? selectedPreviewTrip?.startLocation?.coordinates?.[1]);
+    const sLng = Number(selectedPreviewTrip?.startLongitude ?? selectedPreviewTrip?.startLocation?.coordinates?.[0]);
+    const eLat = Number(selectedPreviewTrip?.endLatitude ?? selectedPreviewTrip?.endLocation?.coordinates?.[1]);
+    const eLng = Number(selectedPreviewTrip?.endLongitude ?? selectedPreviewTrip?.endLocation?.coordinates?.[0]);
+
+    if (Number.isFinite(sLat) && Number.isFinite(sLng)) {
+      if (Number.isFinite(eLat) && Number.isFinite(eLng)) {
+        return [[sLat, sLng], [eLat, eLng]];
+      }
+      return [[sLat, sLng]];
+    }
+
     return routeHistory
       .filter(
         (point) =>
@@ -115,11 +133,10 @@ export default function TripHistory({
       });
 
       L.tileLayer(
-        "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png",
         {
           maxZoom: 19,
-          attribution: "© OpenStreetMap",
-          className: "osm-dark-tiles",
+          subdomains: "abcd",
         }
       ).addTo(map);
 
@@ -195,8 +212,8 @@ export default function TripHistory({
       .slice(0, 15) // Recent 15 trips
       .reverse()
       .map((t, idx) => {
-        const rawTime = t.startTime || t.timestamp;
-        const dateObj = rawTime ? new Date(rawTime) : new Date();
+        const rawTime = t.tripStartTime || t.startTime || t.timestamp || t.createdAt;
+        const dateObj = parseObenDate(rawTime);
         const dist = Number(t.tripDistance ?? t.totalDistance ?? 0);
         const topSpeed = Number(t.maxSpeed ?? t.topSpeed ?? 0);
         const avgSpd = Number(t.avgSpeed ?? t.averageSpeed ?? (dist > 0 && t.sessionDurationMinutes ? (dist / (t.sessionDurationMinutes / 60)) : 0));
@@ -204,14 +221,11 @@ export default function TripHistory({
 
         return {
           id: t.id || idx,
-          dateLabel: dateObj.toLocaleDateString([], {
+          dateLabel: formatISTDate(dateObj, {
             month: "short",
             day: "numeric",
           }),
-          timeLabel: dateObj.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
+          timeLabel: formatISTTime(dateObj),
           distanceKm: Number(dist.toFixed(1)),
           maxSpeedKmh: Math.round(topSpeed),
           avgSpeedKmh: Math.round(avgSpd),
