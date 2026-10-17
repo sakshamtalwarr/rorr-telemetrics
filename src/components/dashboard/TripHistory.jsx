@@ -35,6 +35,7 @@ import {
   formatISTTime,
   formatISTDate,
 } from "../../utils/dateUtils";
+import { fetchRoadRoute } from "../../services/roadRouteService";
 
 const DEFAULT_LAT = 12.9977986667;
 const DEFAULT_LNG = 77.5800862667;
@@ -115,30 +116,65 @@ export default function TripHistory({
       .map((point) => [point.latitude, point.longitude]);
   }, [selectedPreviewTrip, routeHistory]);
 
-  // Leaflet Map Initialization with Unblocked Carto Dark Matter Tiles & ResizeObserver
+  // State for realistic road-following geometry (OSRM)
+  const [roadRoute, setRoadRoute] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRoadRoute() {
+      if (selectedPreviewTrip && Array.isArray(selectedPreviewTrip.points) && selectedPreviewTrip.points.length > 3) {
+        const pts = selectedPreviewTrip.points
+          .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng))
+          .map((p) => [p.lat, p.lng]);
+        if (pts.length > 1) {
+          setRoadRoute(pts);
+          return;
+        }
+      }
+
+      const sLat = Number(selectedPreviewTrip?.startLatitude ?? selectedPreviewTrip?.startLocation?.coordinates?.[1] ?? DEFAULT_LAT);
+      const sLng = Number(selectedPreviewTrip?.startLongitude ?? selectedPreviewTrip?.startLocation?.coordinates?.[0] ?? DEFAULT_LNG);
+      const eLat = Number(selectedPreviewTrip?.endLatitude ?? selectedPreviewTrip?.endLocation?.coordinates?.[1] ?? sLat);
+      const eLng = Number(selectedPreviewTrip?.endLongitude ?? selectedPreviewTrip?.endLocation?.coordinates?.[0] ?? sLng);
+
+      const snapped = await fetchRoadRoute(sLat, sLng, eLat, eLng);
+      if (!cancelled && snapped && snapped.length > 0) {
+        setRoadRoute(snapped);
+      }
+    }
+
+    loadRoadRoute();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPreviewTrip]);
+
+  const activePath = roadRoute.length > 0 ? roadRoute : routeCoordinates;
+
+  // Leaflet Map Initialization with Unwatermarked Esri Dark Canvas
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
     if (!mapInstanceRef.current) {
       const center =
-        routeCoordinates.length > 0
-          ? routeCoordinates[0]
+        activePath.length > 0
+          ? activePath[0]
           : [DEFAULT_LAT, DEFAULT_LNG];
 
       const map = L.map(mapContainerRef.current, {
         center,
-        zoom: routeCoordinates.length > 0 ? 14 : 13,
+        zoom: activePath.length > 0 ? 14 : 13,
         zoomControl: true,
         attributionControl: false,
       });
 
-      // Reliable Dark Matter Tiles (Zero API key needed, non-blocked)
+      // 100% Free, Zero API Key, Zero Watermark Esri Dark Canvas
       L.tileLayer(
-        "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png",
+        "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
         {
-          maxZoom: 19,
-          subdomains: ["a", "b", "c", "d"],
-          attribution: "© OpenStreetMap contributors, © CARTO",
+          maxZoom: 16,
+          attribution: "© Esri, HERE, Garmin, © OpenStreetMap contributors",
         }
       ).addTo(map);
 
@@ -161,9 +197,9 @@ export default function TripHistory({
       endMarkerRef.current = null;
     }
 
-    if (routeCoordinates.length > 1) {
-      const polyline = L.polyline(routeCoordinates, {
-        color: "#EF4444", // Volcanic Red route
+    if (activePath.length > 1) {
+      const polyline = L.polyline(activePath, {
+        color: "#EF4444", // Volcanic Red route following actual roads
         weight: 5,
         opacity: 0.95,
         lineCap: "round",
@@ -173,7 +209,7 @@ export default function TripHistory({
       polylineRef.current = polyline;
 
       // Start pin
-      const startP = routeCoordinates[0];
+      const startP = activePath[0];
       const startM = L.circleMarker(startP, {
         radius: 7,
         fillColor: "#10B981",
@@ -185,7 +221,7 @@ export default function TripHistory({
       startMarkerRef.current = startM;
 
       // Finish pin
-      const endP = routeCoordinates[routeCoordinates.length - 1];
+      const endP = activePath[activePath.length - 1];
       const endM = L.circleMarker(endP, {
         radius: 7,
         fillColor: "#EF4444",
@@ -201,8 +237,8 @@ export default function TripHistory({
       } catch (err) {
         map.setView(startP, 13);
       }
-    } else if (routeCoordinates.length === 1) {
-      map.setView(routeCoordinates[0], 14);
+    } else if (activePath.length === 1) {
+      map.setView(activePath[0], 14);
     }
 
     // Force map to recalculate container size to eliminate grey screen
@@ -229,7 +265,7 @@ export default function TripHistory({
       timers.forEach(clearTimeout);
       if (resizeObserver) resizeObserver.disconnect();
     };
-  }, [routeCoordinates]);
+  }, [activePath]);
 
   // Cleanup on unmount
   useEffect(() => {

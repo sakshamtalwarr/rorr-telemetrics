@@ -24,6 +24,7 @@ import {
   formatISTDate,
   formatDuration,
 } from "../../utils/dateUtils";
+import { fetchRoadRoute } from "../../services/roadRouteService";
 
 // Volcanic Red & Black Leaflet Markers
 const startPinIcon = L.divIcon({
@@ -212,25 +213,60 @@ export default function TripDetailsModal({
   const batterySoc = liveData?.soc ?? trip?.startSOC ?? trip?.startSoc ?? 36;
   const isIgnitionOn = liveData?.ignition ?? false;
 
-  // Leaflet Map Initialization with Carto Dark Matter
+  // State for realistic road-following geometry (OSRM)
+  const [roadRoute, setRoadRoute] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRoadRoute() {
+      if (Array.isArray(trip?.points) && trip.points.length > 3) {
+        const pts = trip.points
+          .filter((p) => Number.isFinite(p?.lat ?? p?.latitude) && Number.isFinite(p?.lng ?? p?.longitude))
+          .map((p) => [Number(p.lat ?? p.latitude), Number(p.lng ?? p.longitude)]);
+        if (pts.length > 1) {
+          setRoadRoute(pts);
+          return;
+        }
+      }
+
+      const sLat = Number(trip?.startLatitude ?? trip?.startLocation?.coordinates?.[1] ?? 12.9978);
+      const sLng = Number(trip?.startLongitude ?? trip?.startLocation?.coordinates?.[0] ?? 77.5812);
+      const eLat = Number(trip?.endLatitude ?? trip?.endLocation?.coordinates?.[1] ?? sLat);
+      const eLng = Number(trip?.endLongitude ?? trip?.endLocation?.coordinates?.[0] ?? sLng);
+
+      const snapped = await fetchRoadRoute(sLat, sLng, eLat, eLng);
+      if (!cancelled && snapped && snapped.length > 0) {
+        setRoadRoute(snapped);
+      }
+    }
+
+    loadRoadRoute();
+    return () => {
+      cancelled = true;
+    };
+  }, [trip]);
+
+  const activePath = roadRoute.length > 0 ? roadRoute : routePoints;
+
+  // Leaflet Map Initialization with Unwatermarked Esri Dark Canvas
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
     if (!mapInstanceRef.current) {
-      const initialCenter = routePoints.length > 0 ? routePoints[0] : [12.9978, 77.5812];
+      const initialCenter = activePath.length > 0 ? activePath[0] : [12.9978, 77.5812];
 
       const map = L.map(mapContainerRef.current, {
         zoomControl: false,
         attributionControl: false,
       }).setView(initialCenter, 13);
 
-      // Reliable Dark Matter Tiles (Zero API key needed, non-blocked)
+      // 100% Free, Zero API Key, Zero Watermark Esri Dark Canvas
       L.tileLayer(
-        "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png",
+        "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
         {
-          maxZoom: 19,
-          subdomains: ["a", "b", "c", "d"],
-          attribution: "© OpenStreetMap contributors, © CARTO",
+          maxZoom: 16,
+          attribution: "© Esri, HERE, Garmin, © OpenStreetMap contributors",
         }
       ).addTo(map);
 
@@ -253,22 +289,22 @@ export default function TripDetailsModal({
       endMarkerRef.current = null;
     }
 
-    if (routePoints.length > 0) {
+    if (activePath.length > 0) {
       // Start Marker (Emerald green)
-      const startMarker = L.marker(routePoints[0], { icon: startPinIcon })
+      const startMarker = L.marker(activePath[0], { icon: startPinIcon })
         .addTo(map)
         .bindPopup(`<strong style="color: #10B981">Start:</strong> ${startTimeStr}`);
       startMarkerRef.current = startMarker;
 
-      if (routePoints.length > 1) {
+      if (activePath.length > 1) {
         // End Marker (Volcanic red)
-        const endMarker = L.marker(routePoints[routePoints.length - 1], { icon: endPinIcon })
+        const endMarker = L.marker(activePath[activePath.length - 1], { icon: endPinIcon })
           .addTo(map)
           .bindPopup(`<strong style="color: #EF4444">End:</strong> ${endTimeStr}`);
         endMarkerRef.current = endMarker;
 
-        // Glowing Crimson Red Polyline (#EF4444)
-        const polyline = L.polyline(routePoints, {
+        // Glowing Crimson Red Polyline following actual roads (#EF4444)
+        const polyline = L.polyline(activePath, {
           color: "#EF4444",
           weight: 5,
           opacity: 0.95,
@@ -283,10 +319,10 @@ export default function TripDetailsModal({
             maxZoom: 15,
           });
         } catch (err) {
-          map.setView(routePoints[0], 14);
+          map.setView(activePath[0], 14);
         }
       } else {
-        map.setView(routePoints[0], 14);
+        map.setView(activePath[0], 14);
       }
     }
 
@@ -314,7 +350,7 @@ export default function TripDetailsModal({
       timers.forEach(clearTimeout);
       if (resizeObserver) resizeObserver.disconnect();
     };
-  }, [routePoints, startTimeStr, endTimeStr]);
+  }, [activePath, startTimeStr, endTimeStr]);
 
   // Cleanup on unmount
   useEffect(() => {

@@ -31,6 +31,7 @@ import {
 import GlassCard from "../common/GlassCard";
 import ErrorBoundary from "../common/ErrorBoundary";
 import { tripTracker } from "../../services/tripTrackerService";
+import { fetchRoadRoute } from "../../services/roadRouteService";
 
 // =====================================================
 // DEFAULT LOCATION (Bengaluru, Karnataka)
@@ -256,6 +257,73 @@ export default function LiveMap({
     };
   }, [currentTripToDisplay]);
 
+  // Road-snapped trajectory coordinates for Rides mode (turns & street curves via OSRM)
+  const [roadSnappedCoords, setRoadSnappedCoords] = useState(null);
+
+  useEffect(() => {
+    let isCancelled = false;
+    setRoadSnappedCoords(null);
+
+    if (!currentTripToDisplay) return;
+
+    async function computeRoute() {
+      // 1. If we have dense breadcrumbs (> 3 points), use them directly
+      const candidatePoints =
+        Array.isArray(cloudPoints) && cloudPoints.length > 3
+          ? cloudPoints
+          : (Array.isArray(currentTripToDisplay.points) && currentTripToDisplay.points.length > 3
+              ? currentTripToDisplay.points
+              : null);
+
+      if (candidatePoints) {
+        const coords = candidatePoints
+          .filter((p) => Number.isFinite(p?.lat ?? p?.latitude) && Number.isFinite(p?.lng ?? p?.longitude))
+          .map((p) => [Number(p.lat ?? p.latitude), Number(p.lng ?? p.longitude)]);
+        if (coords.length > 1) {
+          if (!isCancelled) setRoadSnappedCoords(coords);
+          return;
+        }
+      }
+
+      // 2. Otherwise extract start and end coordinates and snap to actual road network via OSRM
+      const sLat = Number(
+        currentTripToDisplay.startLatitude ??
+        currentTripToDisplay.startLocation?.coordinates?.[1] ??
+        currentTripToDisplay.points?.[0]?.lat ??
+        12.9978
+      );
+      const sLng = Number(
+        currentTripToDisplay.startLongitude ??
+        currentTripToDisplay.startLocation?.coordinates?.[0] ??
+        currentTripToDisplay.points?.[0]?.lng ??
+        77.5812
+      );
+      const eLat = Number(
+        currentTripToDisplay.endLatitude ??
+        currentTripToDisplay.endLocation?.coordinates?.[1] ??
+        currentTripToDisplay.points?.[currentTripToDisplay.points?.length - 1]?.lat ??
+        sLat
+      );
+      const eLng = Number(
+        currentTripToDisplay.endLongitude ??
+        currentTripToDisplay.endLocation?.coordinates?.[0] ??
+        currentTripToDisplay.points?.[currentTripToDisplay.points?.length - 1]?.lng ??
+        sLng
+      );
+
+      const snapped = await fetchRoadRoute(sLat, sLng, eLat, eLng);
+      if (!isCancelled && snapped && snapped.length > 0) {
+        setRoadSnappedCoords(snapped);
+      }
+    }
+
+    computeRoute();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [currentTripToDisplay, cloudPoints]);
+
   // Valid Position Check
   const validPosition =
     typeof latitude === "number" &&
@@ -282,7 +350,16 @@ export default function LiveMap({
       attributionControl: true,
     });
 
-    // Reliable Non-Blocked Dark Tile Layers (Zero API key required)
+    // 100% Free, Unblocked, Zero API Key Esri Dark Canvas Layer
+    const esriDarkLayer = L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+      {
+        attribution: "© Esri, HERE, Garmin, © OpenStreetMap contributors",
+        maxZoom: 16,
+        minZoom: 3,
+      }
+    ).addTo(map);
+
     const osmDarkLayer = L.tileLayer(
       "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png",
       {
@@ -290,15 +367,6 @@ export default function LiveMap({
         maxZoom: 19,
         minZoom: 3,
         subdomains: ["a", "b", "c", "d"],
-      }
-    ).addTo(map);
-
-    const esriDarkLayer = L.tileLayer(
-      "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
-      {
-        attribution: "© Esri",
-        maxZoom: 16,
-        minZoom: 3,
       }
     );
 
@@ -315,8 +383,8 @@ export default function LiveMap({
     L.control
       .layers(
         {
-          "🌑 Stealth Dark (CARTO)": osmDarkLayer,
-          "🌐 Esri Dark Canvas": esriDarkLayer,
+          "🌐 Esri Dark Canvas (Default)": esriDarkLayer,
+          "🌑 Stealth Dark": osmDarkLayer,
           "🏔️ OpenTopoMap (Terrain)": topoLayer,
         },
         null,
@@ -505,20 +573,21 @@ export default function LiveMap({
 
     if (viewMode !== "routes" || !currentTripToDisplay) return;
 
-    const points =
-      (Array.isArray(cloudPoints) && cloudPoints.length >= 2)
-        ? cloudPoints
-        : (currentTripToDisplay.points || []);
+    // Prefer road-snapped street trajectory, falling back to points if snapping is in-flight
+    let coords = roadSnappedCoords;
+    if (!Array.isArray(coords) || coords.length < 2) {
+      const rawPoints =
+        (Array.isArray(cloudPoints) && cloudPoints.length >= 2)
+          ? cloudPoints
+          : (currentTripToDisplay.points || []);
+      coords = rawPoints
+        .filter((p) => Number.isFinite(p?.lat ?? p?.latitude) && Number.isFinite(p?.lng ?? p?.longitude))
+        .map((p) => [Number(p.lat ?? p.latitude), Number(p.lng ?? p.longitude)]);
+    }
 
-    if (!Array.isArray(points) || points.length < 2) return;
+    if (!Array.isArray(coords) || coords.length < 2) return;
 
-    const coords = points
-      .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng))
-      .map((p) => [p.lat, p.lng]);
-
-    if (coords.length < 2) return;
-
-    // 1. Draw Glowing Volcanic Red Route Polyline
+    // 1. Draw Glowing Volcanic Red Route Polyline (snapped to real street curves)
     const polyline = L.polyline(coords, {
       color: "#EF4444",
       weight: 5,
@@ -576,7 +645,7 @@ export default function LiveMap({
     } catch (e) {
       console.warn("Could not fitBounds to route:", e);
     }
-  }, [viewMode, currentTripToDisplay, cloudPoints]);
+  }, [viewMode, currentTripToDisplay, cloudPoints, roadSnappedCoords]);
 
   // ===================================================
   // ACTIVE ONGOING TRIP REAL-TIME TRAIL
