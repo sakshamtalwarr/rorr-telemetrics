@@ -807,12 +807,10 @@ export default function Dashboard({ profile, onLogout }) {
               />
             </div>
 
-            {/* Alerts Banner (if present) */}
-            {alerts.length > 0 && (
-              <div className="mt-4">
-                <Alerts alerts={alerts} />
-              </div>
-            )}
+            {/* System Alerts & Active Safety Hub */}
+            <div className="mt-6">
+              <Alerts alerts={alerts} onNavigate={navigateTo} />
+            </div>
           </div>
         )}
 

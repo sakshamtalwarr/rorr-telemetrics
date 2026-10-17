@@ -9,6 +9,7 @@ import {
   TrendingUp,
   Sun,
   Moon,
+  Bell,
 } from "lucide-react";
 
 export default function Header({
@@ -162,6 +163,27 @@ export default function Header({
             RIGHT SIDE CONTROLS
         ================================================= */}
         <div className="flex items-center gap-1.5 sm:gap-2.5">
+          {/* NOTIFICATION BELL */}
+          <button
+            type="button"
+            onClick={() => onNavigate("overview")}
+            title="System Alerts & Active Safety"
+            className="
+              clay-button
+              p-2 rounded-2xl
+              bg-black/40 border border-white/10
+              text-slate-300 hover:text-red-400
+              relative
+              active:scale-95 transition-all
+            "
+          >
+            <Bell className="h-4 w-4" />
+            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600" />
+            </span>
+          </button>
+
           {/* THEME TOGGLE */}
           <button
             type="button"
