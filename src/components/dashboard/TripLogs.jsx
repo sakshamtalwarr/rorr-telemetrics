@@ -25,6 +25,7 @@ import {
   getISTDateKey,
   formatDuration,
 } from "../../utils/dateUtils";
+import { getTripRouteTitle } from "../../utils/locationUtils";
 
 const FILTER_PRESETS = [
   {
@@ -347,7 +348,7 @@ export default function TripLogs({
                               <div className="flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse group-hover:scale-125 transition-transform" />
                                 <p className="text-xs sm:text-sm font-bold text-slate-100 group-hover:text-white line-clamp-1">
-                                  {trip.title || `Ride Session • Kumara Park / Bengaluru`}
+                                  {getTripRouteTitle(trip)}
                                 </p>
                               </div>
 

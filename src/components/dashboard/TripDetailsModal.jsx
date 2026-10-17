@@ -25,6 +25,7 @@ import {
   formatDuration,
 } from "../../utils/dateUtils";
 import { fetchRoadRoute } from "../../services/roadRouteService";
+import { getBangaloreAreaName } from "../../utils/locationUtils";
 
 // Volcanic Red & Black Leaflet Markers
 const startPinIcon = L.divIcon({
@@ -179,13 +180,14 @@ export default function TripDetailsModal({
     if (trip?.startLocationName) return trip.startLocationName;
     const sLat = Number(trip?.startLatitude ?? trip?.startLocation?.coordinates?.[1] ?? routePoints[0]?.[0]);
     const sLng = Number(trip?.startLongitude ?? trip?.startLocation?.coordinates?.[0] ?? routePoints[0]?.[1]);
-    if (Number.isFinite(sLat) && Number.isFinite(sLng)) {
-      if (Math.abs(sLat - 12.998) < 0.05 && Math.abs(sLng - 77.58) < 0.05) {
-        return "Kumara Park West, Guttahalli , Bengaluru, Bangalore Division, Karnataka, India-560020";
-      }
+    const area = getBangaloreAreaName(sLat, sLng);
+    if (area) {
+      return `${area}, Bengaluru, Karnataka`;
+    }
+    if (Number.isFinite(sLat) && Number.isFinite(sLng) && sLat !== 0 && sLng !== 0) {
       return `GPS: ${sLat.toFixed(5)}° N, ${sLng.toFixed(5)}° E (Bengaluru)`;
     }
-    return "Kumara Park West, Guttahalli , Bengaluru, Karnataka-560020";
+    return "Bengaluru Urban, Karnataka";
   }, [trip, routePoints]);
 
   const endAddress = useMemo(() => {
@@ -193,13 +195,14 @@ export default function TripDetailsModal({
     if (trip?.endLocationName) return trip.endLocationName;
     const eLat = Number(trip?.endLatitude ?? trip?.endLocation?.coordinates?.[1] ?? routePoints[routePoints.length - 1]?.[0]);
     const eLng = Number(trip?.endLongitude ?? trip?.endLocation?.coordinates?.[0] ?? routePoints[routePoints.length - 1]?.[1]);
-    if (Number.isFinite(eLat) && Number.isFinite(eLng)) {
-      if (Math.abs(eLat - 12.998) < 0.05 && Math.abs(eLng - 77.58) < 0.05) {
-        return "Kumara Park West, Guttahalli , Bengaluru, Bangalore Division, Karnataka, India-560020";
-      }
+    const area = getBangaloreAreaName(eLat, eLng);
+    if (area) {
+      return `${area}, Bengaluru, Karnataka`;
+    }
+    if (Number.isFinite(eLat) && Number.isFinite(eLng) && eLat !== 0 && eLng !== 0) {
       return `GPS: ${eLat.toFixed(5)}° N, ${eLng.toFixed(5)}° E (Bengaluru)`;
     }
-    return "Kumara Park West, Guttahalli , Bengaluru, Karnataka-560020";
+    return "Bengaluru Urban, Karnataka";
   }, [trip, routePoints]);
 
   // Ride tip

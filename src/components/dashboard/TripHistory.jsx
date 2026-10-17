@@ -36,6 +36,7 @@ import {
   formatISTDate,
 } from "../../utils/dateUtils";
 import { fetchRoadRoute } from "../../services/roadRouteService";
+import { getTripRouteTitle } from "../../utils/locationUtils";
 
 const DEFAULT_LAT = 12.9977986667;
 const DEFAULT_LNG = 77.5800862667;
@@ -619,7 +620,7 @@ export default function TripHistory({
             </h4>
             {selectedPreviewTrip && (
               <span className="text-xs font-mono text-red-400 font-bold px-2 py-0.5 rounded-md bg-red-950/60 border border-red-500/30">
-                {selectedPreviewTrip.title || `${selectedPreviewTrip.startLocationName || "Origin"} ➔ ${selectedPreviewTrip.endLocationName || "Destination"}`}
+                {getTripRouteTitle(selectedPreviewTrip)}
               </span>
             )}
           </div>
@@ -646,7 +647,7 @@ export default function TripHistory({
           <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
             {trips.slice(0, 8).map((t, idx) => {
               const isSelected = selectedPreviewTrip?.tripId === t.tripId || (!selectedPreviewTrip && idx === 0);
-              const label = t.title || (t.startLocationName && t.endLocationName ? `${t.startLocationName} ➔ ${t.endLocationName}` : `Trip #${idx + 1}`);
+              const label = getTripRouteTitle(t);
 
               return (
                 <button

@@ -32,6 +32,7 @@ import GlassCard from "../common/GlassCard";
 import ErrorBoundary from "../common/ErrorBoundary";
 import { tripTracker } from "../../services/tripTrackerService";
 import { fetchRoadRoute } from "../../services/roadRouteService";
+import { getBangaloreAreaName, getTripRouteTitle } from "../../utils/locationUtils";
 
 // =====================================================
 // DEFAULT LOCATION (Bengaluru, Karnataka)
@@ -741,7 +742,7 @@ export default function LiveMap({
               <div className="flex items-center gap-2">
                 <p className="text-xs sm:text-sm font-bold text-white truncate">
                   {viewMode === "routes" && currentTripToDisplay
-                    ? (currentTripToDisplay.title || `${currentTripToDisplay.startLocationName || "Origin"} ➔ ${currentTripToDisplay.endLocationName || "Destination"}`)
+                    ? getTripRouteTitle(currentTripToDisplay)
                     : (address || "Live Motorcycle Position")}
                 </p>
                 {activeTrip && (
@@ -907,7 +908,7 @@ export default function LiveMap({
               <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
                 {trips.map((t, idx) => {
                   const isSelected = currentTripToDisplay?.tripId === t.tripId || (!currentTripToDisplay && idx === 0);
-                  const title = t.title || (t.startLocationName && t.endLocationName ? `${t.startLocationName} ➔ ${t.endLocationName}` : `Trip #${idx + 1}`);
+                  const title = getTripRouteTitle(t);
 
                   return (
                     <button
@@ -938,12 +939,22 @@ export default function LiveMap({
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
                       <span className="text-xs sm:text-sm font-bold text-white">
-                        {currentTripToDisplay.startLocationName || "Start Location"}
+                        {currentTripToDisplay.startLocationName ||
+                          getBangaloreAreaName(
+                            currentTripToDisplay.startLatitude ?? currentTripToDisplay.startLocation?.coordinates?.[1],
+                            currentTripToDisplay.startLongitude ?? currentTripToDisplay.startLocation?.coordinates?.[0]
+                          ) ||
+                          "Origin"}
                       </span>
                       <ArrowRight className="w-3.5 h-3.5 text-red-400" />
                       <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
                       <span className="text-xs sm:text-sm font-bold text-white">
-                        {currentTripToDisplay.endLocationName || "Destination"}
+                        {currentTripToDisplay.endLocationName ||
+                          getBangaloreAreaName(
+                            currentTripToDisplay.endLatitude ?? currentTripToDisplay.endLocation?.coordinates?.[1],
+                            currentTripToDisplay.endLongitude ?? currentTripToDisplay.endLocation?.coordinates?.[0]
+                          ) ||
+                          "Destination"}
                       </span>
                     </div>
 
