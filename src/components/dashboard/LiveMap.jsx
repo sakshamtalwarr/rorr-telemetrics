@@ -343,19 +343,26 @@ export default function LiveMap({
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
+    if (mapContainerRef.current._leaflet_id) {
+      delete mapContainerRef.current._leaflet_id;
+    }
+
     const map = L.map(mapContainerRef.current, {
       center: [initialLat, initialLng],
       zoom: validPosition ? 15 : 13,
       zoomControl: true,
       attributionControl: true,
+      maxZoom: 19,
     });
 
     // 100% Free, Unblocked, Zero API Key Esri Dark Canvas Layer
+    // maxNativeZoom: 16 prevents Esri from returning "Map data not yet available" placeholder tiles
     const esriDarkLayer = L.tileLayer(
       "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
       {
         attribution: "© Esri, HERE, Garmin, © OpenStreetMap contributors",
-        maxZoom: 16,
+        maxNativeZoom: 16,
+        maxZoom: 19,
         minZoom: 3,
       }
     ).addTo(map);

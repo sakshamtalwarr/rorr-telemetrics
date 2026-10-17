@@ -157,6 +157,10 @@ export default function TripHistory({
     if (!mapContainerRef.current) return;
 
     if (!mapInstanceRef.current) {
+      if (mapContainerRef.current && mapContainerRef.current._leaflet_id) {
+        delete mapContainerRef.current._leaflet_id;
+      }
+
       const center =
         activePath.length > 0
           ? activePath[0]
@@ -167,13 +171,16 @@ export default function TripHistory({
         zoom: activePath.length > 0 ? 14 : 13,
         zoomControl: true,
         attributionControl: false,
+        maxZoom: 18,
       });
 
       // 100% Free, Zero API Key, Zero Watermark Esri Dark Canvas
+      // maxNativeZoom: 16 prevents Esri from returning "Map data not yet available" placeholder tiles
       L.tileLayer(
         "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
         {
-          maxZoom: 16,
+          maxNativeZoom: 16,
+          maxZoom: 18,
           attribution: "© Esri, HERE, Garmin, © OpenStreetMap contributors",
         }
       ).addTo(map);
@@ -233,7 +240,10 @@ export default function TripHistory({
       endMarkerRef.current = endM;
 
       try {
-        map.fitBounds(polyline.getBounds(), { padding: [30, 30] });
+        map.fitBounds(polyline.getBounds(), {
+          padding: [30, 30],
+          maxZoom: 16,
+        });
       } catch (err) {
         map.setView(startP, 13);
       }

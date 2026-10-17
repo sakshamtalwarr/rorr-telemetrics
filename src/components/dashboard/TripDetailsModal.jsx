@@ -254,18 +254,25 @@ export default function TripDetailsModal({
     if (!mapContainerRef.current) return;
 
     if (!mapInstanceRef.current) {
+      if (mapContainerRef.current && mapContainerRef.current._leaflet_id) {
+        delete mapContainerRef.current._leaflet_id;
+      }
+
       const initialCenter = activePath.length > 0 ? activePath[0] : [12.9978, 77.5812];
 
       const map = L.map(mapContainerRef.current, {
         zoomControl: false,
         attributionControl: false,
+        maxZoom: 18,
       }).setView(initialCenter, 13);
 
       // 100% Free, Zero API Key, Zero Watermark Esri Dark Canvas
+      // maxNativeZoom: 16 prevents Esri from returning "Map data not yet available" placeholder tiles
       L.tileLayer(
         "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
         {
-          maxZoom: 16,
+          maxNativeZoom: 16,
+          maxZoom: 18,
           attribution: "© Esri, HERE, Garmin, © OpenStreetMap contributors",
         }
       ).addTo(map);
