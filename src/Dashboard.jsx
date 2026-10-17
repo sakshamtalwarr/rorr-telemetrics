@@ -803,6 +803,7 @@ export default function Dashboard({ profile, onLogout }) {
                 onSelectTrip={handleSelectTrip}
                 tripFilter={tripFilter}
                 onFilterChange={changeTripFilter}
+                liveData={liveData}
               />
             </div>
 
@@ -934,6 +935,7 @@ export default function Dashboard({ profile, onLogout }) {
                 onSelectTrip={handleSelectTrip}
                 tripFilter={tripFilter}
                 onFilterChange={changeTripFilter}
+                liveData={liveData}
               />
             </div>
 
