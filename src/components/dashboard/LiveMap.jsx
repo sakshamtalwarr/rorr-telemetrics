@@ -282,22 +282,22 @@ export default function LiveMap({
       attributionControl: true,
     });
 
-    // 100% Free OpenStreetMap Stealth Dark Tile Layer
+    // Reliable Non-Blocked Dark Tile Layers (Zero API key required)
     const osmDarkLayer = L.tileLayer(
-      "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png",
       {
-        attribution: "© OpenStreetMap contributors",
+        attribution: "© OpenStreetMap contributors, © CARTO",
         maxZoom: 19,
         minZoom: 3,
-        className: "osm-dark-tiles",
+        subdomains: ["a", "b", "c", "d"],
       }
     ).addTo(map);
 
-    const osmStandardLayer = L.tileLayer(
-      "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    const esriDarkLayer = L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
       {
-        attribution: "© OpenStreetMap contributors",
-        maxZoom: 19,
+        attribution: "© Esri",
+        maxZoom: 16,
         minZoom: 3,
       }
     );
@@ -315,8 +315,8 @@ export default function LiveMap({
     L.control
       .layers(
         {
-          "🌑 Stealth Dark (OSM)": osmDarkLayer,
-          "🌐 OpenStreetMap Standard": osmStandardLayer,
+          "🌑 Stealth Dark (CARTO)": osmDarkLayer,
+          "🌐 Esri Dark Canvas": esriDarkLayer,
           "🏔️ OpenTopoMap (Terrain)": topoLayer,
         },
         null,

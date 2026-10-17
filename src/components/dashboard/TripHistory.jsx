@@ -115,7 +115,7 @@ export default function TripHistory({
       .map((point) => [point.latitude, point.longitude]);
   }, [selectedPreviewTrip, routeHistory]);
 
-  // Leaflet Map Initialization with Dark Tiles
+  // Leaflet Map Initialization with Unblocked Carto Dark Matter Tiles & ResizeObserver
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
@@ -132,12 +132,13 @@ export default function TripHistory({
         attributionControl: false,
       });
 
+      // Reliable Dark Matter Tiles (Zero API key needed, non-blocked)
       L.tileLayer(
-        "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png",
         {
           maxZoom: 19,
-          attribution: "© OpenStreetMap contributors",
-          className: "osm-dark-tiles",
+          subdomains: ["a", "b", "c", "d"],
+          attribution: "© OpenStreetMap contributors, © CARTO",
         }
       ).addTo(map);
 
@@ -195,13 +196,50 @@ export default function TripHistory({
       endM.bindTooltip("🏁 Destination", { permanent: false, direction: "top" });
       endMarkerRef.current = endM;
 
-      map.fitBounds(polyline.getBounds(), { padding: [30, 30] });
+      try {
+        map.fitBounds(polyline.getBounds(), { padding: [30, 30] });
+      } catch (err) {
+        map.setView(startP, 13);
+      }
+    } else if (routeCoordinates.length === 1) {
+      map.setView(routeCoordinates[0], 14);
+    }
+
+    // Force map to recalculate container size to eliminate grey screen
+    const refreshMap = () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize(false);
+      }
+    };
+
+    const timers = [
+      setTimeout(refreshMap, 50),
+      setTimeout(refreshMap, 150),
+      setTimeout(refreshMap, 400),
+      setTimeout(refreshMap, 900),
+    ];
+
+    let resizeObserver = null;
+    if (typeof ResizeObserver !== "undefined" && mapContainerRef.current) {
+      resizeObserver = new ResizeObserver(refreshMap);
+      resizeObserver.observe(mapContainerRef.current);
     }
 
     return () => {
-      // Cleanup handled gracefully
+      timers.forEach(clearTimeout);
+      if (resizeObserver) resizeObserver.disconnect();
     };
   }, [routeCoordinates]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, []);
 
   // Parse REAL trip records from Oben API into formatted graph points
   const realTripChartData = useMemo(() => {

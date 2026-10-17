@@ -224,13 +224,13 @@ export default function TripDetailsModal({
         attributionControl: false,
       }).setView(initialCenter, 13);
 
-      // 100% Open-Source Dark OpenStreetMap (No API key needed)
+      // Reliable Dark Matter Tiles (Zero API key needed, non-blocked)
       L.tileLayer(
-        "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png",
         {
           maxZoom: 19,
-          attribution: "© OpenStreetMap contributors",
-          className: "osm-dark-tiles",
+          subdomains: ["a", "b", "c", "d"],
+          attribution: "© OpenStreetMap contributors, © CARTO",
         }
       ).addTo(map);
 
@@ -277,20 +277,43 @@ export default function TripDetailsModal({
         }).addTo(map);
         polylineRef.current = polyline;
 
-        map.fitBounds(polyline.getBounds(), {
-          padding: [40, 40],
-          maxZoom: 15,
-        });
+        try {
+          map.fitBounds(polyline.getBounds(), {
+            padding: [40, 40],
+            maxZoom: 15,
+          });
+        } catch (err) {
+          map.setView(routePoints[0], 14);
+        }
       } else {
         map.setView(routePoints[0], 14);
       }
     }
 
-    const timer = setTimeout(() => {
-      map.invalidateSize();
-    }, 250);
+    // Force map to recalculate container size to eliminate grey screen
+    const refreshMap = () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize(false);
+      }
+    };
 
-    return () => clearTimeout(timer);
+    const timers = [
+      setTimeout(refreshMap, 50),
+      setTimeout(refreshMap, 150),
+      setTimeout(refreshMap, 350),
+      setTimeout(refreshMap, 800),
+    ];
+
+    let resizeObserver = null;
+    if (typeof ResizeObserver !== "undefined" && mapContainerRef.current) {
+      resizeObserver = new ResizeObserver(refreshMap);
+      resizeObserver.observe(mapContainerRef.current);
+    }
+
+    return () => {
+      timers.forEach(clearTimeout);
+      if (resizeObserver) resizeObserver.disconnect();
+    };
   }, [routePoints, startTimeStr, endTimeStr]);
 
   // Cleanup on unmount
