@@ -176,12 +176,12 @@ export default function TripLogs({
       ">
         {Array.isArray(trips) && trips.length > 0 ? (
           trips.map((trip, index) => {
-            const rawTime = trip.startTime || trip.timestamp;
+            const rawTime = trip.startTime || trip.timestamp || trip.createdAt || trip.startedAt;
             const dateObj = rawTime ? new Date(rawTime) : new Date();
-            const distance = trip.distanceKm ?? trip.tripDistance ?? trip.totalDistance ?? 0;
-            const duration = trip.durationMinutes ? `${trip.durationMinutes} min` : (trip.sessionDurationMinutes ? `${trip.sessionDurationMinutes} min` : (trip.totalTrips ? `${trip.totalTrips} trip(s)` : '15 min'));
+            const distance = trip.distanceKm ?? trip.tripDistance ?? trip.totalDistance ?? trip.distance ?? 0;
+            const duration = trip.durationMinutes ? `${trip.durationMinutes} min` : (trip.duration ? `${trip.duration} min` : (trip.sessionDurationMinutes ? `${trip.sessionDurationMinutes} min` : (trip.totalTrips ? `${trip.totalTrips} trip(s)` : '15 min')));
             const title = trip.title || (trip.startLocationName && trip.endLocationName ? `${trip.startLocationName} ➔ ${trip.endLocationName}` : `Trip #${index + 1}`);
-            const topSpeed = trip.topSpeed || trip.maxSpeed;
+            const topSpeed = trip.topSpeed || trip.maxSpeed || trip.speed || trip.averageSpeed;
 
             return (
               <div

@@ -76,7 +76,7 @@ function openTripDatabase() {
 // Uttam Nagar East, West Delhi (28.6236° N, 77.0673° E)
 // =====================================================
 
-const SEED_DELHI_TRIPS = [
+export const SEED_DELHI_TRIPS = [
   {
     tripId: "delhi_trip_20260930_uttam_janakpuri",
     title: "Ride: Uttam Nagar East ➔ Janakpuri (30 Sep)",
@@ -254,6 +254,23 @@ class TripTrackerService {
     } catch (e) {
       console.warn("Could not write active trip cache:", e);
     }
+  }
+
+  getInitialTrips() {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        const cached = localStorage.getItem(LOCAL_STORAGE_BACKUP_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Could not read initial trips from backup:", e);
+    }
+    return SEED_DELHI_TRIPS;
   }
 
   subscribe(listener) {
@@ -525,17 +542,31 @@ class TripTrackerService {
       }
     }
 
-    // If still empty, return seed Delhi trips so Saksham immediately has interactive route lines!
+    // If still empty or missing seed trips, ensure seed Delhi trips exist so Saksham immediately has interactive route lines!
     if (!trips || trips.length === 0) {
-      trips = SEED_DELHI_TRIPS;
-      // Seed them into IndexedDB / localStorage for persistence
+      trips = [...SEED_DELHI_TRIPS];
       for (const st of SEED_DELHI_TRIPS) {
         this.saveCompletedTrip(st);
+      }
+    } else {
+      let added = false;
+      for (const st of SEED_DELHI_TRIPS) {
+        if (!trips.some((t) => t.tripId === st.tripId)) {
+          trips.push(st);
+          added = true;
+        }
+      }
+      if (added) {
+        try {
+          if (typeof window !== "undefined" && window.localStorage) {
+            localStorage.setItem(LOCAL_STORAGE_BACKUP_KEY, JSON.stringify(trips.slice(0, 30)));
+          }
+        } catch (e) {}
       }
     }
 
     return trips.sort(
-      (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+      (a, b) => new Date(b.startTime || b.timestamp || 0).getTime() - new Date(a.startTime || a.timestamp || 0).getTime()
     );
   }
 

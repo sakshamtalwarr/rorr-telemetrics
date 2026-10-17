@@ -94,7 +94,7 @@ export default function Dashboard({ profile, onLogout }) {
 
   const [alerts, setAlerts] = useState([]);
   const [trips, setTrips] = useState([]);
-  const [recordedTrips, setRecordedTrips] = useState([]);
+  const [recordedTrips, setRecordedTrips] = useState(() => tripTracker.getInitialTrips());
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [activeTrip, setActiveTrip] = useState(null);
 
@@ -159,6 +159,25 @@ export default function Dashboard({ profile, onLogout }) {
     }
   }, [liveData]);
 
+  // Helper to extract an array of trips from whatever shape the backend or Oben returns
+  const extractTripsList = useCallback((res) => {
+    if (!res) return [];
+    if (Array.isArray(res)) return res;
+    if (Array.isArray(res.data)) return res.data;
+    if (Array.isArray(res.data?.data)) return res.data.data;
+    if (Array.isArray(res.data?.trips)) return res.data.trips;
+    if (Array.isArray(res.trips)) return res.trips;
+    if (Array.isArray(res.result)) return res.result;
+    return [];
+  }, []);
+
+  const [tripFilter, setTripFilter] = useState({
+    preset: "sept_oct",
+    from: "2026-09-25",
+    to: "2026-10-18",
+    label: "30 Sep & 1 Oct Rides",
+  });
+
   // Merge recorded local trips with cloud trips from Oben Argus API
   const allDisplayTrips = useMemo(() => {
     const combined = [...recordedTrips];
@@ -169,8 +188,27 @@ export default function Dashboard({ profile, onLogout }) {
         }
       });
     }
+
+    // Filter by tripFilter if active
+    if (tripFilter?.from && tripFilter?.to) {
+      const fromTime = new Date(tripFilter.from).getTime();
+      // Add 24h to include entire target day up to 23:59:59
+      const toTime = new Date(tripFilter.to).getTime() + 86400000;
+
+      const filtered = combined.filter((t) => {
+        const rawTime = t.startTime || t.timestamp || t.createdAt;
+        if (!rawTime) return true;
+        const tTime = new Date(rawTime).getTime();
+        return tTime >= fromTime && tTime <= toTime;
+      });
+
+      if (filtered.length > 0) {
+        return filtered;
+      }
+    }
+
     return combined;
-  }, [recordedTrips, trips]);
+  }, [recordedTrips, trips, tripFilter]);
 
   useEffect(() => {
     function handleHashChange() {
@@ -197,13 +235,6 @@ export default function Dashboard({ profile, onLogout }) {
     liveData?.vehicleId ||
     null;
 
-  const [tripFilter, setTripFilter] = useState({
-    preset: "sept_oct",
-    from: "2026-09-25",
-    to: "2026-10-18",
-    label: "30 Sep & 1 Oct Rides",
-  });
-
   const changeTripFilter = useCallback(async (newFilter) => {
     setTripFilter(newFilter);
     try {
@@ -212,13 +243,14 @@ export default function Dashboard({ profile, onLogout }) {
         to: newFilter.to,
         pageSize: 50,
       });
-      if (Array.isArray(response?.data)) {
-        setTrips(response.data);
+      const list = extractTripsList(response);
+      if (list.length > 0) {
+        setTrips(list);
       }
     } catch (err) {
       console.warn("Trip filter fetch error:", err);
     }
-  }, []);
+  }, [extractTripsList]);
 
   useEffect(() => {
     let cancelled = false;
@@ -236,8 +268,9 @@ export default function Dashboard({ profile, onLogout }) {
 
         if (cancelled) return;
 
-        if (Array.isArray(tripsResponse?.data)) {
-          setTrips(tripsResponse.data);
+        const list = extractTripsList(tripsResponse);
+        if (list.length > 0) {
+          setTrips(list);
         }
 
         const alertData = alertsResponse?.data?.getAlertLogsByImei?.data;
@@ -255,7 +288,7 @@ export default function Dashboard({ profile, onLogout }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [extractTripsList]);
 
   useEffect(() => {
     let cancelled = false;
@@ -627,13 +660,22 @@ export default function Dashboard({ profile, onLogout }) {
 
                   <div className="flex items-center justify-between text-xs text-slate-400 px-1">
                     <span>Last packet: {liveData?.packetCreatedAt ? new Date(liveData.packetCreatedAt).toLocaleTimeString() : "Live"}</span>
-                    <button
-                      type="button"
-                      onClick={() => navigateTo("map")}
-                      className="text-red-400 font-bold hover:underline"
-                    >
-                      Open Geofence Controls →
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => navigateTo("rides")}
+                        className="text-red-400 font-bold hover:underline"
+                      >
+                        Trip Logs →
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navigateTo("map")}
+                        className="text-slate-400 hover:text-white font-medium hover:underline"
+                      >
+                        Map & Fence →
+                      </button>
+                    </div>
                   </div>
                 </GlassCard>
               </div>
@@ -730,9 +772,43 @@ export default function Dashboard({ profile, onLogout }) {
               </div>
             </div>
 
+            {/* Overview Recent Trip Logs & Map Route Launcher */}
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-3 px-1">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-xl bg-red-600/20 text-red-400 border border-red-500/30">
+                    <TrendingUp className="w-4 h-4 text-red-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold uppercase tracking-wider text-white">
+                      Trip Logs & Route Tracker
+                    </h4>
+                    <p className="text-xs text-slate-400">
+                      Rides logged directly from your Oben Rorr telematics
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigateTo("rides")}
+                  className="px-3 py-1.5 rounded-xl bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/30 text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95"
+                >
+                  <span>Full Analytics</span>
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <TripLogs
+                trips={allDisplayTrips}
+                onSelectTrip={handleSelectTrip}
+                tripFilter={tripFilter}
+                onFilterChange={changeTripFilter}
+              />
+            </div>
+
             {/* Alerts Banner (if present) */}
             {alerts.length > 0 && (
-              <div className="mt-2">
+              <div className="mt-4">
                 <Alerts alerts={alerts} />
               </div>
             )}
