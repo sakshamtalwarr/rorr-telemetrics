@@ -19,32 +19,26 @@ const FILTER_PRESETS = [
   {
     id: "daily",
     label: "⚡ Daily / Today",
-    from: "2026-10-16",
-    to: "2026-10-18",
+    from: new Date().toISOString().split("T")[0],
+    to: new Date().toISOString().split("T")[0],
   },
   {
     id: "weekly",
-    label: "📅 Weekly",
-    from: "2026-10-10",
-    to: "2026-10-18",
+    label: "📅 This Week",
+    from: new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0],
+    to: new Date().toISOString().split("T")[0],
   },
   {
     id: "monthly",
-    label: "🗓️ Monthly",
-    from: "2026-09-20",
-    to: "2026-10-18",
-  },
-  {
-    id: "sept_oct",
-    label: "🌟 30 Sep & 1 Oct",
-    from: "2026-09-28",
-    to: "2026-10-02",
+    label: "🗓️ This Month",
+    from: new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0],
+    to: new Date().toISOString().split("T")[0],
   },
   {
     id: "all",
-    label: "All Sessions",
+    label: "All Recorded Rides",
     from: "2024-09-01",
-    to: "2026-10-18",
+    to: new Date().toISOString().split("T")[0],
   },
 ];
 
@@ -367,8 +361,8 @@ export default function TripLogs({
               p-8
             ">
               <Navigation className="w-8 h-8 text-red-500/40 mb-2 animate-bounce-subtle" />
-              <p className="text-slate-300 font-bold">No sessions found for this filter.</p>
-              <p className="text-xs text-slate-500 mt-1">Switch to "Monthly" or "🌟 30 Sep & 1 Oct" to view recorded rides.</p>
+              <p className="text-slate-300 font-bold">No recorded trips in this date window.</p>
+              <p className="text-xs text-slate-500 mt-1">Live GPS routes are saved automatically when your Oben Rorr is ridden with ignition ON.</p>
             </div>
           )}
         </div>
@@ -380,6 +374,7 @@ export default function TripLogs({
           trip={selectedSessionForModal}
           onClose={() => setSelectedSessionForModal(null)}
           liveData={liveData}
+          onOpenFullMap={onSelectTrip}
         />
       )}
     </>

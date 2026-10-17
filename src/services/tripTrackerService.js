@@ -70,216 +70,13 @@ function openTripDatabase() {
 }
 
 // =====================================================
-// SEED AUTHENTIC DELHI ROUTES FOR SAKSHAM'S OBEN RORR
+// REAL TRIP TRACKING - SAKSHAM'S OBEN RORR (DL8EV2219)
 // =====================================================
-// Centered around Saksham's Vahan RC address:
-// Uttam Nagar East, West Delhi (28.6236° N, 77.0673° E)
+// Real telemetry trips logged during active riding sessions
+// or fetched directly from Oben Argus Cloud APIs.
 // =====================================================
 
-export const SEED_DELHI_TRIPS = [
-  {
-    tripId: "oben_trip_bengaluru_kumara_park",
-    title: "Highway Express: Kumara Park ➔ NH44 (Bengaluru)",
-    startLocationName: "Kumara Park West, Bengaluru",
-    endLocationName: "Kumara Park West, Bengaluru",
-    startAddress: "Kumara Park West, Guttahalli , Bengaluru, Bangalore Division, Karnataka, India-560020",
-    endAddress: "Kumara Park West, Guttahalli , Bengaluru, Bangalore Division, Karnataka, India-560020",
-    startTime: "2026-10-16T21:48:00.000Z",
-    endTime: "2026-10-16T23:08:00.000Z",
-    distanceKm: 68,
-    durationMinutes: 80,
-    durationFormatted: "01 hrs 20 mins",
-    avgSpeed: 51,
-    topSpeed: 101,
-    startSoc: 100,
-    endSoc: 34,
-    socConsumed: 66,
-    netSavings: 155.04,
-    carbonSavedGrams: 1700,
-    mode: "Havoc",
-    rideTip: "Do not over accelerate or apply harsh braking",
-    points: [
-      { lat: 12.9978, lng: 77.5801, speed: 0, soc: 100 },
-      { lat: 13.0125, lng: 77.5862, speed: 45, soc: 98 },
-      { lat: 13.0358, lng: 77.5912, speed: 68, soc: 94 },
-      { lat: 13.0725, lng: 77.6045, speed: 85, soc: 88 },
-      { lat: 13.1152, lng: 77.6254, speed: 96, soc: 80 },
-      { lat: 13.1582, lng: 77.6582, speed: 101, soc: 71 },
-      { lat: 13.1986, lng: 77.7066, speed: 92, soc: 63 },
-      { lat: 13.1582, lng: 77.6582, speed: 88, soc: 54 },
-      { lat: 13.1152, lng: 77.6254, speed: 76, soc: 46 },
-      { lat: 13.0725, lng: 77.6045, speed: 64, soc: 40 },
-      { lat: 12.9978, lng: 77.5801, speed: 0, soc: 34 },
-    ],
-  },
-  {
-    tripId: "delhi_trip_20260930_uttam_janakpuri",
-    title: "Ride: Uttam Nagar East ➔ Janakpuri (30 Sep)",
-    startLocationName: "Uttam Nagar East Metro",
-    endLocationName: "Janakpuri District Centre",
-    startAddress: "B-41, Third Floor, Kumharo Vaali Road, Uttam Nagar Indra Park, New Delhi, Delhi 110059",
-    endAddress: "Janakpuri District Centre, Shivaji Marg, Janakpuri, New Delhi, Delhi 110058",
-    startTime: "2026-09-30T09:15:00.000Z",
-    endTime: "2026-09-30T09:33:00.000Z",
-    distanceKm: 5.4,
-    durationMinutes: 18,
-    durationFormatted: "00 hrs 18 mins",
-    avgSpeed: 31,
-    topSpeed: 64,
-    startSoc: 92,
-    endSoc: 86,
-    socConsumed: 6,
-    netSavings: 12.30,
-    carbonSavedGrams: 135,
-    mode: "City",
-    rideTip: "Maintain smooth throttle in City mode for optimal range",
-    points: [
-      { lat: 28.6236, lng: 77.0673, speed: 0, soc: 92 },
-      { lat: 28.6242, lng: 77.0695, speed: 28, soc: 92 },
-      { lat: 28.6251, lng: 77.0732, speed: 45, soc: 91 },
-      { lat: 28.6268, lng: 77.0784, speed: 58, soc: 91 },
-      { lat: 28.6282, lng: 77.0825, speed: 64, soc: 90 },
-      { lat: 28.6295, lng: 77.0868, speed: 52, soc: 89 },
-      { lat: 28.6288, lng: 77.0912, speed: 41, soc: 88 },
-      { lat: 28.6279, lng: 77.0945, speed: 30, soc: 87 },
-      { lat: 28.6265, lng: 77.0968, speed: 18, soc: 86 },
-      { lat: 28.6255, lng: 77.0982, speed: 0, soc: 86 },
-    ],
-  },
-  {
-    tripId: "delhi_trip_20260930_return",
-    title: "Return: Janakpuri ➔ Uttam Nagar (30 Sep)",
-    startLocationName: "Janakpuri District Centre",
-    endLocationName: "Uttam Nagar East",
-    startAddress: "Janakpuri District Centre, Shivaji Marg, Janakpuri, New Delhi, Delhi 110058",
-    endAddress: "B-41, Third Floor, Kumharo Vaali Road, Uttam Nagar Indra Park, New Delhi, Delhi 110059",
-    startTime: "2026-09-30T17:45:00.000Z",
-    endTime: "2026-09-30T18:04:00.000Z",
-    distanceKm: 5.6,
-    durationMinutes: 19,
-    durationFormatted: "00 hrs 19 mins",
-    avgSpeed: 30,
-    topSpeed: 62,
-    startSoc: 86,
-    endSoc: 79,
-    socConsumed: 7,
-    netSavings: 12.75,
-    carbonSavedGrams: 140,
-    mode: "City",
-    rideTip: "Regenerative braking active: recovered 1.2% pack charge on deceleration",
-    points: [
-      { lat: 28.6255, lng: 77.0982, speed: 0, soc: 86 },
-      { lat: 28.6265, lng: 77.0968, speed: 25, soc: 85 },
-      { lat: 28.6279, lng: 77.0945, speed: 42, soc: 84 },
-      { lat: 28.6288, lng: 77.0912, speed: 56, soc: 83 },
-      { lat: 28.6295, lng: 77.0868, speed: 62, soc: 82 },
-      { lat: 28.6282, lng: 77.0825, speed: 50, soc: 81 },
-      { lat: 28.6268, lng: 77.0784, speed: 42, soc: 80 },
-      { lat: 28.6251, lng: 77.0732, speed: 28, soc: 80 },
-      { lat: 28.6236, lng: 77.0673, speed: 0, soc: 79 },
-    ],
-  },
-  {
-    tripId: "delhi_trip_20261001_uttam_rajouri",
-    title: "Ride: Uttam Nagar ➔ Rajouri Garden (1 Oct)",
-    startLocationName: "Uttam Nagar Indra Park",
-    endLocationName: "Rajouri Garden Ring Road",
-    startAddress: "Uttam Nagar Indra Park, Near Metro Pillar 660, West Delhi, Delhi 110059",
-    endAddress: "Rajouri Garden Ring Road, Main Market, New Delhi, Delhi 110027",
-    startTime: "2026-10-01T10:30:00.000Z",
-    endTime: "2026-10-01T10:58:00.000Z",
-    distanceKm: 9.2,
-    durationMinutes: 28,
-    durationFormatted: "00 hrs 28 mins",
-    avgSpeed: 38,
-    topSpeed: 76,
-    startSoc: 85,
-    endSoc: 74,
-    socConsumed: 11,
-    netSavings: 20.98,
-    carbonSavedGrams: 230,
-    mode: "Havoc",
-    rideTip: "Havoc mode delivers rapid acceleration, use Eco in heavy traffic for max efficiency",
-    points: [
-      { lat: 28.6236, lng: 77.0673, speed: 0, soc: 85 },
-      { lat: 28.6255, lng: 77.0735, speed: 35, soc: 85 },
-      { lat: 28.6285, lng: 77.0831, speed: 58, soc: 84 },
-      { lat: 28.6322, lng: 77.0954, speed: 66, soc: 82 },
-      { lat: 28.6365, lng: 77.1085, speed: 76, soc: 80 },
-      { lat: 28.6412, lng: 77.1165, speed: 71, soc: 78 },
-      { lat: 28.6455, lng: 77.1228, speed: 48, soc: 76 },
-      { lat: 28.6482, lng: 77.1255, speed: 25, soc: 75 },
-      { lat: 28.6501, lng: 77.1272, speed: 0, soc: 74 },
-    ],
-  },
-  {
-    tripId: "delhi_trip_20261001_return",
-    title: "Return: Rajouri Garden ➔ Uttam Nagar (1 Oct)",
-    startLocationName: "Rajouri Garden Ring Road",
-    endLocationName: "Uttam Nagar Indra Park",
-    startAddress: "Rajouri Garden Ring Road, Main Market, New Delhi, Delhi 110027",
-    endAddress: "Uttam Nagar Indra Park, Near Metro Pillar 660, West Delhi, Delhi 110059",
-    startTime: "2026-10-01T19:20:00.000Z",
-    endTime: "2026-10-01T19:49:00.000Z",
-    distanceKm: 9.5,
-    durationMinutes: 29,
-    durationFormatted: "00 hrs 29 mins",
-    avgSpeed: 37,
-    topSpeed: 74,
-    startSoc: 74,
-    endSoc: 62,
-    socConsumed: 12,
-    netSavings: 21.65,
-    carbonSavedGrams: 238,
-    mode: "City",
-    rideTip: "Smooth cornering and consistent throttle observed on this session",
-    points: [
-      { lat: 28.6501, lng: 77.1272, speed: 0, soc: 74 },
-      { lat: 28.6482, lng: 77.1255, speed: 30, soc: 73 },
-      { lat: 28.6455, lng: 77.1228, speed: 55, soc: 71 },
-      { lat: 28.6412, lng: 77.1165, speed: 74, soc: 69 },
-      { lat: 28.6365, lng: 77.1085, speed: 68, soc: 67 },
-      { lat: 28.6322, lng: 77.0954, speed: 52, soc: 65 },
-      { lat: 28.6285, lng: 77.0831, speed: 45, soc: 64 },
-      { lat: 28.6255, lng: 77.0735, speed: 32, soc: 63 },
-      { lat: 28.6236, lng: 77.0673, speed: 0, soc: 62 },
-    ],
-  },
-  {
-    tripId: "delhi_trip_20261015_uttam_cp",
-    title: "Cruise: West Delhi ➔ Connaught Place (15 Oct)",
-    startLocationName: "West Delhi (Uttam Nagar)",
-    endLocationName: "Connaught Place Inner Circle",
-    startAddress: "Uttam Nagar East, Metro Pillar 650, New Delhi 110059",
-    endAddress: "Connaught Place Inner Circle, Block B, New Delhi 110001",
-    startTime: "2026-10-15T11:00:00.000Z",
-    endTime: "2026-10-15T11:44:00.000Z",
-    distanceKm: 18.7,
-    durationMinutes: 44,
-    durationFormatted: "00 hrs 44 mins",
-    avgSpeed: 42,
-    topSpeed: 88,
-    startSoc: 100,
-    endSoc: 79,
-    socConsumed: 21,
-    netSavings: 42.60,
-    carbonSavedGrams: 468,
-    mode: "Havoc",
-    rideTip: "Do not over accelerate or apply harsh braking",
-    points: [
-      { lat: 28.6236, lng: 77.0673, speed: 0, soc: 100 },
-      { lat: 28.6275, lng: 77.0812, speed: 42, soc: 99 },
-      { lat: 28.6338, lng: 77.1005, speed: 64, soc: 97 },
-      { lat: 28.6425, lng: 77.1232, speed: 75, soc: 95 },
-      { lat: 28.6485, lng: 77.1458, speed: 82, soc: 92 },
-      { lat: 28.6452, lng: 77.1712, speed: 88, soc: 89 },
-      { lat: 28.6398, lng: 77.1955, speed: 68, soc: 86 },
-      { lat: 28.6342, lng: 77.2085, speed: 45, soc: 83 },
-      { lat: 28.6315, lng: 77.2167, speed: 22, soc: 80 },
-      { lat: 28.6298, lng: 77.2185, speed: 0, soc: 79 },
-    ],
-  },
-];
+export const SEED_DELHI_TRIPS = [];
 
 // =====================================================
 // TRIP TRACKER CLASS
@@ -323,14 +120,19 @@ class TripTrackerService {
         if (cached) {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed;
+            // Purge any legacy mock trips
+            return parsed.filter(
+              (t) =>
+                !t.tripId?.startsWith("delhi_trip_") &&
+                !t.tripId?.startsWith("oben_trip_bengaluru")
+            );
           }
         }
       }
     } catch (e) {
       console.warn("Could not read initial trips from backup:", e);
     }
-    return SEED_DELHI_TRIPS;
+    return [];
   }
 
   subscribe(listener) {
@@ -602,28 +404,12 @@ class TripTrackerService {
       }
     }
 
-    // If still empty or missing seed trips, ensure seed Delhi trips exist so Saksham immediately has interactive route lines!
-    if (!trips || trips.length === 0) {
-      trips = [...SEED_DELHI_TRIPS];
-      for (const st of SEED_DELHI_TRIPS) {
-        this.saveCompletedTrip(st);
-      }
-    } else {
-      let added = false;
-      for (const st of SEED_DELHI_TRIPS) {
-        if (!trips.some((t) => t.tripId === st.tripId)) {
-          trips.push(st);
-          added = true;
-        }
-      }
-      if (added) {
-        try {
-          if (typeof window !== "undefined" && window.localStorage) {
-            localStorage.setItem(LOCAL_STORAGE_BACKUP_KEY, JSON.stringify(trips.slice(0, 30)));
-          }
-        } catch (e) {}
-      }
-    }
+    // Filter out any legacy mock trips so only genuine recorded rides remain
+    trips = (trips || []).filter(
+      (t) =>
+        !t.tripId?.startsWith("delhi_trip_") &&
+        !t.tripId?.startsWith("oben_trip_bengaluru")
+    );
 
     return trips.sort(
       (a, b) => new Date(b.startTime || b.timestamp || 0).getTime() - new Date(a.startTime || a.timestamp || 0).getTime()

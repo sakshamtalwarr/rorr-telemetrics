@@ -173,10 +173,10 @@ export default function Dashboard({ profile, onLogout }) {
   }, []);
 
   const [tripFilter, setTripFilter] = useState({
-    preset: "sept_oct",
-    from: "2026-09-25",
-    to: "2026-10-18",
-    label: "30 Sep & 1 Oct Rides",
+    preset: "all",
+    from: "2024-09-01",
+    to: new Date().toISOString().split("T")[0],
+    label: "All Recorded Rides",
   });
 
   // Merge recorded local trips with cloud trips from Oben Argus API
@@ -196,16 +196,12 @@ export default function Dashboard({ profile, onLogout }) {
       // Add 24h to include entire target day up to 23:59:59
       const toTime = new Date(tripFilter.to).getTime() + 86400000;
 
-      const filtered = combined.filter((t) => {
+      return combined.filter((t) => {
         const rawTime = t.startTime || t.timestamp || t.createdAt;
-        if (!rawTime) return true;
+        if (!rawTime) return false;
         const tTime = new Date(rawTime).getTime();
         return tTime >= fromTime && tTime <= toTime;
       });
-
-      if (filtered.length > 0) {
-        return filtered;
-      }
     }
 
     return combined;
