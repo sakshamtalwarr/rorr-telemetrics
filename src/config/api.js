@@ -25,7 +25,9 @@ export const BACKEND_API =
 // =====================================================
 
 export const BACKEND_WS =
-    import.meta.env.VITE_WS_URL ||
+    (import.meta.env.VITE_WS_URL && !import.meta.env.VITE_WS_URL.includes("localhost")
+        ? import.meta.env.VITE_WS_URL
+        : null) ||
     BACKEND_URL
         .replace(/^https:/, "wss:")
         .replace(/^http:/, "ws:");
